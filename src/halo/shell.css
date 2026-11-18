@@ -1,0 +1,1108 @@
+
+/* ------------------------------------------------------------------------
+ * Halo — clear glass over Folio's Shell coverage.
+ *
+ * Every Shell surface is a tinted plane whose alpha keeps text at 4.5:1
+ * over pure black or pure white, so Halo is legible with no blur at all.
+ * Blur my Shell, when installed, renders the blur behind these planes; the
+ * theme script sets its corner radii to the values used here.
+ * Selectors cover GNOME Shell 46 (.quick-menu-toggle) and 50
+ * (.quick-toggle-has-menu) widget names.
+ * ---------------------------------------------------------------------- */
+
+/* Panel islands ---------------------------------------------------------
+ * The bar itself is transparent. Activities, the clock and the system
+ * controls each sit on their own pane of glass. Halo's companion extension
+ * marks the three panes so Blur my Shell blurs behind each one; their tint
+ * is in the halo-tint block at the end of this file. */
+
+#panel,
+#panel:overview,
+#panel.unlock-screen,
+#panel.login-screen {
+  height: {{PANEL_HEIGHT}};
+  margin: 0 {{PANEL_INSET}} 0;
+  background-color: transparent !important;
+  background-gradient-direction: none;
+  border: none;
+  box-shadow: none !important;
+  color: {{FOREGROUND}};
+  font-weight: {{TYPE_WEIGHT}};
+}
+
+/* Over a light wallpaper a white pane is set apart by its edge and shadow,
+ * not by its tint, so the islands carry a hairline and a close shadow. */
+#panelLeft,
+#panelCenter,
+#panelRight {
+  border: 1px solid {{PANEL_EDGE}};
+  border-radius: {{RADIUS_PANEL}};
+  box-shadow: 0 2px 10px {{PANEL_SHADOW}};
+  padding: 0 2px;
+  spacing: 0;
+  transition-duration: 250ms;
+}
+
+#panelCenter {
+  padding: 0 4px;
+}
+
+#panel.unlock-screen #panelLeft,
+#panel.unlock-screen #panelCenter,
+#panel.unlock-screen #panelRight,
+#panel.login-screen #panelLeft,
+#panel.login-screen #panelCenter,
+#panel.login-screen #panelRight {
+  background-color: transparent !important;
+  background-gradient-direction: none !important;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+#panel .panel-button,
+#panel:overview .panel-button {
+  color: {{FOREGROUND}};
+  border: 4px solid transparent;
+  border-radius: 10px;
+  -natural-hpadding: 12px;
+  -minimum-hpadding: 6px;
+  font-weight: {{TYPE_WEIGHT}} !important;
+  box-shadow: none;
+  transition-duration: 150ms;
+}
+
+#panel .panel-button:hover,
+#panel:overview .panel-button:hover {
+  box-shadow: inset 0 0 0 100px {{GLASS_HOVER}};
+}
+
+#panel .panel-button:active,
+#panel .panel-button:checked,
+#panel:overview .panel-button:active,
+#panel:overview .panel-button:checked {
+  color: {{FOREGROUND}};
+  box-shadow: inset 0 0 0 100px {{GLASS_PRESSED}};
+}
+
+/* On the bar, focus is drawn in the label colour: it holds 3:1 on any backdrop. */
+#panel .panel-button:focus {
+  border-color: transparent;
+  box-shadow: inset 0 0 0 2px {{FOREGROUND}};
+}
+
+#panel .system-status-icon,
+#panel .panel-button .system-status-icon {
+  color: {{FOREGROUND}} !important;
+}
+
+#panel .panel-button .panel-status-indicators-box,
+#panel .panel-button .panel-status-menu-box {
+  spacing: 6px;
+}
+
+#panel .panel-button#panelActivities .workspace-dot {
+  background-color: {{FOREGROUND}} !important;
+  border-radius: 999px;
+}
+
+#panel .panel-button.clock-display .clock,
+#panel .panel-button.clock-display:hover .clock,
+#panel .panel-button.clock-display:active .clock,
+#panel .panel-button.clock-display:checked .clock {
+  color: {{FOREGROUND}};
+  background-color: transparent;
+  border-width: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-feature-settings: "tnum";
+}
+
+#panel .panel-button.clock-display:focus .clock {
+  box-shadow: none;
+}
+
+#panel.unlock-screen .panel-button,
+#panel.login-screen .panel-button,
+#panel.unlock-screen .panel-button.clock-display .clock,
+#panel.login-screen .panel-button.clock-display .clock,
+#panel.unlock-screen .system-status-icon,
+#panel.login-screen .system-status-icon {
+  color: white !important;
+}
+
+#panel.unlock-screen .panel-button:hover,
+#panel.login-screen .panel-button:hover,
+#panel.unlock-screen .panel-button:checked,
+#panel.login-screen .panel-button:checked {
+  box-shadow: inset 0 0 0 100px {{LOCK_FIELD}};
+}
+
+/* Shared glass for floating surfaces ----------------------------------- */
+
+.popup-menu-content,
+.candidate-popup-content,
+.modal-dialog,
+.notification-banner,
+.osd-window,
+.osd-monitor-label,
+.switcher-list,
+.workspace-switcher,
+.resize-popup,
+.screenshot-ui-panel,
+.app-folder-dialog,
+.search-section-content {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_POPUP}};
+  border: 1px solid {{GLASS_RIM}};
+  box-shadow: 0 10px 28px {{SHADOW_DEEP}};
+}
+
+.popup-menu-content,
+.candidate-popup-content {
+  border-radius: {{RADIUS_SURFACE}};
+  padding: 6px;
+}
+
+.candidate-popup-content {
+  border-radius: 12px;
+}
+
+.popup-menu-boxpointer,
+.candidate-popup-boxpointer {
+  -arrow-rise: 6px;
+  -arrow-border-radius: {{RADIUS_SURFACE}};
+}
+
+/* Menus --------------------------------------------------------------- */
+
+.popup-menu-item,
+.popup-sub-menu .popup-menu-item {
+  color: {{FOREGROUND}};
+  border-radius: {{RADIUS_CONTROL}};
+  padding: 9px 12px;
+  margin: 0;
+}
+
+.popup-menu-item:hover,
+.popup-menu-item:selected,
+.popup-sub-menu .popup-menu-item:hover,
+.popup-sub-menu .popup-menu-item:selected {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_HOVER}};
+}
+
+.popup-menu-item:active,
+.popup-sub-menu .popup-menu-item:active {
+  background-color: {{GLASS_PRESSED}};
+}
+
+.popup-menu-item:checked {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_TILE}};
+  box-shadow: none;
+}
+
+.popup-menu-item:focus,
+.popup-sub-menu .popup-menu-item:focus {
+  box-shadow: inset 0 0 0 2px {{FOCUS}} !important;
+}
+
+.popup-sub-menu {
+  background-color: {{GLASS_TILE}};
+  border: none;
+  border-radius: {{RADIUS_CONTROL}};
+  box-shadow: none;
+}
+
+.popup-separator-menu-item .popup-separator-menu-item-separator,
+.popup-sub-menu .popup-separator-menu-item .popup-separator-menu-item-separator {
+  background-color: {{GLASS_LINE}};
+  height: 1px;
+}
+
+.popup-menu-ornament {
+  color: {{ACCENT_INK}};
+}
+
+/* Quick Settings ------------------------------------------------------- */
+
+.quick-settings {
+  padding: 16px;
+  border-radius: {{RADIUS_SHEET}};
+}
+
+.quick-settings-grid {
+  spacing-rows: 10px;
+  spacing-columns: 10px;
+}
+
+.quick-settings .quick-toggle,
+.quick-settings .quick-menu-toggle,
+.quick-settings .quick-toggle-has-menu {
+  min-height: 3.55em;
+  border-radius: {{RADIUS_TILE}};
+}
+
+.quick-toggle,
+.quick-menu-toggle .quick-toggle-arrow,
+.quick-toggle-has-menu .quick-toggle-menu-button,
+.quick-settings .icon-button,
+.quick-settings-system-item .power-item,
+.message-list-controls .button {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_TILE}};
+  background-gradient-direction: none;
+  border-color: {{GLASS_LINE}};
+  box-shadow: none;
+  transition-duration: 150ms;
+}
+
+.quick-toggle:hover,
+.quick-menu-toggle .quick-toggle-arrow:hover,
+.quick-toggle-has-menu .quick-toggle-menu-button:hover,
+.quick-settings .icon-button:hover,
+.quick-settings-system-item .power-item:hover,
+.message-list-controls .button:hover {
+  background-color: {{GLASS_TILE_HOVER}};
+}
+
+.quick-toggle:active,
+.quick-menu-toggle .quick-toggle-arrow:active,
+.quick-toggle-has-menu .quick-toggle-menu-button:active,
+.quick-settings .icon-button:active,
+.quick-settings-system-item .power-item:active,
+.message-list-controls .button:active {
+  background-color: {{GLASS_TILE_PRESSED}};
+}
+
+.quick-toggle:checked,
+.quick-menu-toggle .quick-toggle-arrow:checked,
+.quick-toggle-has-menu .quick-toggle-menu-button:checked,
+.quick-toggle-menu .header .icon.active {
+  color: {{ON_ACCENT}};
+  background-color: {{ACCENT}};
+  background-gradient-direction: none;
+  border-color: {{ON_ACCENT_LINE}};
+  box-shadow: none;
+}
+
+.quick-toggle:checked:hover,
+.quick-menu-toggle .quick-toggle-arrow:checked:hover,
+.quick-toggle-has-menu .quick-toggle-menu-button:checked:hover {
+  background-color: {{ACCENT_HOVER}};
+}
+
+.quick-toggle:checked:active,
+.quick-menu-toggle .quick-toggle-arrow:checked:active,
+.quick-toggle-has-menu .quick-toggle-menu-button:checked:active {
+  background-color: {{ACCENT_PRESSED}};
+}
+
+.quick-toggle:focus,
+.quick-menu-toggle .quick-toggle-arrow:focus,
+.quick-toggle-has-menu .quick-toggle-menu-button:focus,
+.quick-settings .icon-button:focus,
+.quick-settings-system-item .power-item:focus,
+.quick-slider .slider-bin:focus,
+.message-list-controls .button:focus {
+  box-shadow: inset 0 0 0 2px {{FOCUS}} !important;
+}
+
+.quick-toggle:checked:focus,
+.quick-menu-toggle .quick-toggle-arrow:checked:focus,
+.quick-toggle-has-menu .quick-toggle-menu-button:checked:focus {
+  box-shadow: inset 0 0 0 2px {{ON_ACCENT}} !important;
+}
+
+.quick-toggle:insensitive,
+.quick-menu-toggle .quick-toggle-arrow:insensitive,
+.quick-toggle-has-menu .quick-toggle-menu-button:insensitive {
+  color: {{DISABLED}};
+  background-color: {{GLASS_TILE}};
+}
+
+/* Split toggles: the main half and the arrow share one tile. */
+.quick-menu-toggle .quick-toggle:ltr,
+.quick-toggle-has-menu .quick-toggle:ltr {
+  border-radius: {{RADIUS_TILE}} 0 0 {{RADIUS_TILE}};
+}
+
+.quick-menu-toggle .quick-toggle:rtl,
+.quick-toggle-has-menu .quick-toggle:rtl {
+  border-radius: 0 {{RADIUS_TILE}} {{RADIUS_TILE}} 0;
+}
+
+.quick-menu-toggle .quick-toggle:ltr:last-child,
+.quick-menu-toggle .quick-toggle:rtl:last-child,
+.quick-toggle-has-menu .quick-toggle:last-child:ltr,
+.quick-toggle-has-menu .quick-toggle:last-child:rtl {
+  border-radius: {{RADIUS_TILE}};
+}
+
+.quick-menu-toggle .quick-toggle-arrow:ltr,
+.quick-toggle-has-menu .quick-toggle-menu-button:ltr {
+  border-radius: 0 {{RADIUS_TILE}} {{RADIUS_TILE}} 0;
+}
+
+.quick-menu-toggle .quick-toggle-arrow:rtl,
+.quick-toggle-has-menu .quick-toggle-menu-button:rtl {
+  border-radius: {{RADIUS_TILE}} 0 0 {{RADIUS_TILE}};
+}
+
+.quick-toggle-has-menu .quick-toggle-separator {
+  background-color: {{GLASS_LINE}};
+}
+
+.quick-toggle-has-menu:checked .quick-toggle-separator {
+  background-color: {{ON_ACCENT_LINE}};
+}
+
+.quick-toggle .quick-toggle-title {
+  font-weight: {{TYPE_WEIGHT}};
+}
+
+.quick-toggle .quick-toggle-subtitle,
+.quick-toggle StBoxLayout > .quick-toggle-subtitle {
+  font-weight: 400;
+}
+
+.quick-settings .icon-button,
+.quick-settings-system-item .power-item {
+  border-radius: 999px;
+  border: none;
+}
+
+/* Sliders float directly on the glass. */
+.quick-slider .slider-bin {
+  border-radius: 999px;
+  padding: 10px 12px;
+}
+
+.quick-slider .slider-bin:hover {
+  background-color: {{GLASS_HOVER}};
+}
+
+.slider,
+.quick-settings .slider {
+  height: 1.4em;
+  color: {{SLIDER_HANDLE}};
+  -barlevel-height: 6px;
+  -barlevel-background-color: {{GLASS_TRACK}};
+  -barlevel-active-background-color: {{GLASS_ACCENT}};
+  -barlevel-overdrive-color: {{ERROR}};
+  -barlevel-overdrive-separator-width: 1px;
+  -barlevel-border-width: 0;
+  -slider-handle-radius: 10px;
+  -slider-handle-border-width: 1px;
+  -slider-handle-border-color: {{HANDLE_EDGE}};
+}
+
+.slider:hover,
+.slider:active {
+  color: {{SLIDER_HANDLE}};
+}
+
+/* Submenus open inside the sheet as a recessed pane. */
+.quick-toggle-menu,
+.quick-toggle-menu:hover,
+.quick-toggle-menu:focus {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_RAISED}};
+  background-gradient-direction: none;
+  border: 1px solid {{GLASS_LINE}};
+  border-radius: 22px;
+  box-shadow: none;
+  padding: 12px;
+}
+
+.quick-toggle-menu .header {
+  box-shadow: none;
+  padding-bottom: 6px;
+}
+
+.quick-toggle-menu .header .icon {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_TILE}};
+  border-radius: 999px;
+}
+
+.quick-toggle-menu .header .title {
+  font-weight: {{TYPE_HEADING_WEIGHT}};
+}
+
+.quick-toggle-menu .header .subtitle {
+  color: {{MUTED}};
+}
+
+.toggle-switch {
+  background-color: {{GLASS_TRACK}};
+  box-shadow: none;
+}
+
+.toggle-switch:hover {
+  background-color: {{GLASS_TILE_PRESSED}};
+}
+
+.toggle-switch .handle,
+.toggle-switch:checked .handle {
+  background-color: {{SLIDER_HANDLE}};
+  box-shadow: 0 1px 2px {{HANDLE_EDGE}};
+}
+
+.toggle-switch:checked,
+.toggle-switch:checked:hover {
+  background-color: {{GLASS_ACCENT}};
+  box-shadow: none;
+}
+
+.check-box StIcon {
+  border-color: {{CONTROL_BORDER}};
+  border-radius: 6px;
+}
+
+.check-box:checked StIcon,
+.check-box:checked:hover StIcon {
+  color: {{ON_ACCENT}};
+  background-color: {{ACCENT}};
+  border-color: {{ACCENT}};
+}
+
+/* Calendar and notifications ------------------------------------------ */
+
+.datemenu-popover {
+  border-radius: {{RADIUS_SHEET}};
+}
+
+#calendarArea {
+  padding: 8px;
+}
+
+.datemenu-today-button,
+.datemenu-calendar-column .datemenu-today-button {
+  color: {{FOREGROUND}};
+  background-color: transparent !important;
+  border-radius: {{RADIUS_TILE}};
+  box-shadow: none;
+  padding: 10px 14px;
+}
+
+.datemenu-today-button:hover,
+.datemenu-calendar-column .datemenu-today-button:hover {
+  background-color: {{GLASS_HOVER}} !important;
+}
+
+.datemenu-today-button .day-label {
+  color: {{ACCENT_INK}};
+  font-size: 0.95em;
+  font-weight: {{TYPE_WEIGHT}};
+}
+
+.datemenu-today-button .date-label {
+  color: {{FOREGROUND}};
+  font-size: {{TYPE_DISPLAY}};
+  font-weight: {{TYPE_HEADING_WEIGHT}};
+}
+
+.calendar {
+  background-color: transparent;
+  border: none;
+}
+
+.calendar .calendar-day,
+.calendar .calendar-day-heading,
+.calendar .calendar-month-header .pager-button {
+  border-radius: 999px;
+}
+
+.calendar .calendar-day:hover,
+.calendar .calendar-month-header .pager-button:hover {
+  background-color: {{GLASS_HOVER}};
+}
+
+.calendar .calendar-day:selected {
+  color: {{ACCENT_INK}};
+  background-color: {{SELECTION}};
+  box-shadow: none;
+}
+
+.calendar .calendar-day.calendar-today,
+.calendar .calendar-day.calendar-today:selected {
+  color: {{ON_ACCENT}} !important;
+  background-color: {{ACCENT}} !important;
+  font-weight: {{TYPE_HEADING_WEIGHT}};
+}
+
+.calendar .calendar-day.calendar-day-with-events {
+  border-bottom: none;
+  font-weight: {{TYPE_HEADING_WEIGHT}};
+}
+
+.message,
+.message-view .message,
+.events-button,
+.world-clocks-button,
+.weather-button {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_TILE}};
+  background-gradient-direction: none;
+  border: none;
+  border-radius: {{RADIUS_TILE}};
+  box-shadow: none;
+}
+
+.message:hover,
+.events-button:hover,
+.world-clocks-button:hover,
+.weather-button:hover {
+  background-color: {{GLASS_TILE_HOVER}};
+}
+
+.message:second-in-stack {
+  background-color: {{GLASS_TILE_HOVER}};
+}
+
+.message:lower-in-stack {
+  background-color: {{GLASS_TILE_PRESSED}};
+  border-color: transparent;
+}
+
+.message .message-header .message-close-button,
+.message .message-header .message-expand-button {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_TILE}};
+  border-radius: 999px;
+}
+
+.message .message-header .message-close-button:hover,
+.message .message-header .message-expand-button:hover {
+  background-color: {{GLASS_TILE_PRESSED}};
+}
+
+.message-list .message-list-placeholder,
+.message .message-header,
+.message .message-header .message-header-content .event-time,
+.events-button .events-box .event-time,
+.world-clocks-button .world-clocks-header,
+.weather-button .weather-header {
+  color: {{MUTED}};
+}
+
+.message-list {
+  border-color: {{GLASS_LINE}};
+}
+
+/* A banner floats over windows, so it always carries full popup glass. On some
+ * Shell versions the banner and its message are one actor; the compound selector
+ * outranks the quieter tint that messages use inside the calendar. */
+.notification-banner,
+.notification-banner:hover,
+.message.notification-banner,
+.message.notification-banner:hover {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_POPUP}};
+  border: 1px solid {{GLASS_RIM}};
+  border-radius: {{RADIUS_SURFACE}};
+  box-shadow: 0 10px 28px {{SHADOW_DEEP}};
+}
+
+.notification-banner {
+  padding: 0;
+}
+
+.notification-banner .message,
+.notification-banner .message:hover {
+  background-color: transparent;
+  box-shadow: none;
+  border-radius: {{RADIUS_SURFACE}};
+}
+
+.notification-banner .notification-button,
+.notification-banner .notification-buttons-bin .button {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_TILE}};
+  border-radius: {{RADIUS_CONTROL}};
+}
+
+/* Dialogs, OSD, switchers ---------------------------------------------- */
+
+.modal-dialog {
+  border-radius: {{RADIUS_DIALOG}};
+}
+
+.modal-dialog .message-dialog-title {
+  font-size: {{TYPE_TITLE}};
+  font-weight: {{TYPE_HEADING_WEIGHT}};
+}
+
+.modal-dialog .modal-dialog-button-box,
+.modal-dialog .modal-dialog-linked-button-box {
+  background-color: transparent;
+  border: none;
+  padding: 12px;
+  spacing: 10px;
+}
+
+.modal-dialog .modal-dialog-button,
+.modal-dialog .modal-dialog-linked-button {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_TILE}};
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  box-shadow: none;
+}
+
+.modal-dialog .modal-dialog-button:hover,
+.modal-dialog .modal-dialog-linked-button:hover {
+  background-color: {{GLASS_TILE_HOVER}};
+}
+
+.modal-dialog .modal-dialog-button:active,
+.modal-dialog .modal-dialog-linked-button:active {
+  background-color: {{GLASS_TILE_PRESSED}};
+}
+
+.modal-dialog .modal-dialog-button.default,
+.modal-dialog .modal-dialog-linked-button.default {
+  color: {{ON_ACCENT}};
+  background-color: {{ACCENT}};
+}
+
+.modal-dialog .modal-dialog-button.default:hover,
+.modal-dialog .modal-dialog-linked-button.default:hover {
+  background-color: {{ACCENT_HOVER}};
+}
+
+.modal-dialog .modal-dialog-button:focus,
+.modal-dialog .modal-dialog-linked-button:focus {
+  box-shadow: inset 0 0 0 2px {{FOCUS}} !important;
+}
+
+.modal-dialog .modal-dialog-button.default:focus,
+.modal-dialog .modal-dialog-linked-button.default:focus {
+  box-shadow: inset 0 0 0 2px {{ON_ACCENT}} !important;
+}
+
+.modal-dialog .modal-dialog-button.destructive-action,
+.modal-dialog .modal-dialog-linked-button.destructive-action {
+  color: {{ON_ERROR}};
+  background-color: {{ERROR}};
+}
+
+.modal-dialog StEntry,
+.run-dialog-entry,
+.prompt-dialog-password-entry {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_TILE}};
+  border: 1px solid {{GLASS_LINE}};
+  border-radius: {{RADIUS_CONTROL}};
+  selection-background-color: {{ACCENT}};
+  selected-color: {{ON_ACCENT}};
+}
+
+.modal-dialog StEntry:focus,
+.run-dialog-entry:focus,
+.prompt-dialog-password-entry:focus {
+  border-color: {{FOCUS}};
+  box-shadow: inset 0 0 0 1px {{FOCUS}} !important;
+}
+
+.osd-window {
+  border-radius: 28px;
+  padding: 12px 18px;
+}
+
+.osd-monitor-label {
+  border-radius: {{RADIUS_SURFACE}};
+}
+
+.osd-window .level,
+.osd-window .level-bar {
+  -barlevel-height: 6px;
+  -barlevel-background-color: {{GLASS_TRACK}};
+  -barlevel-active-background-color: {{FOREGROUND}};
+  -barlevel-overdrive-color: {{ERROR}};
+  border-radius: 999px;
+}
+
+.switcher-list,
+.workspace-switcher {
+  border-radius: {{RADIUS_DIALOG}};
+  padding: 10px;
+}
+
+.resize-popup {
+  border-radius: 12px;
+}
+
+.switcher-list .item-box {
+  color: {{FOREGROUND}};
+  border-radius: {{RADIUS_TILE}};
+  border-color: transparent;
+}
+
+.switcher-list .item-box:selected {
+  background-color: {{GLASS_TILE_PRESSED}};
+  box-shadow: none;
+}
+
+.switcher-list .item-box:outlined {
+  border: 2px solid {{FOCUS}};
+}
+
+.workspace-switcher .ws-switcher-indicator {
+  background-color: {{GLASS_TRACK}};
+  border-radius: 999px;
+}
+
+.workspace-switcher .ws-switcher-indicator:active {
+  background-color: {{GLASS_ACCENT}};
+}
+
+/* Screenshot UI. */
+.screenshot-ui-panel {
+  border-radius: {{RADIUS_SHEET}};
+}
+
+.screenshot-ui-type-button,
+.screenshot-ui-show-pointer-button,
+.screenshot-ui-close-button {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_TILE}};
+  border-radius: {{RADIUS_TILE}};
+  box-shadow: none;
+}
+
+.screenshot-ui-type-button:hover,
+.screenshot-ui-show-pointer-button:hover,
+.screenshot-ui-close-button:hover {
+  background-color: {{GLASS_TILE_HOVER}};
+}
+
+.screenshot-ui-type-button:checked,
+.screenshot-ui-show-pointer-button:checked {
+  color: {{ON_ACCENT}};
+  background-color: {{ACCENT}};
+}
+
+.screenshot-ui-close-button {
+  border-radius: 999px;
+}
+
+/* Overview -------------------------------------------------------------- */
+
+#overviewGroup {
+  background-color: {{OVERVIEW}};
+  background-image: url("halo-field-{{VARIANT}}.png");
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.workspace-background {
+  border-radius: 24px;
+  box-shadow: 0 10px 28px {{SHADOW_DEEP}};
+}
+
+.workspace-thumbnails .workspace-thumbnail {
+  background-color: {{GLASS_TILE}};
+  border: none;
+  border-radius: 10px;
+}
+
+.workspace-thumbnail-indicator {
+  border: 2px solid {{GLASS_ACCENT}};
+  border-radius: 12px;
+}
+
+.search-entry,
+.search-entry:hover,
+.search-entry:focus {
+  min-height: 1.6em;
+  width: 26em;
+  padding: 9px 16px;
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_POPUP}};
+  background-gradient-direction: none;
+  border: 1px solid {{GLASS_RIM}};
+  border-radius: 999px;
+  box-shadow: 0 8px 24px {{SHADOW}};
+}
+
+.search-entry:focus {
+  border-color: {{FOCUS}};
+  box-shadow: inset 0 0 0 1px {{FOCUS}} !important;
+}
+
+.search-entry StLabel.hint-text,
+.search-entry .search-entry-icon,
+.search-entry:focus .search-entry-icon {
+  color: {{MUTED}};
+}
+
+.search-entry StText {
+  selection-background-color: {{ACCENT}};
+  selected-color: {{ON_ACCENT}};
+}
+
+.search-section-content {
+  border-radius: {{RADIUS_SURFACE}};
+  padding: 10px;
+}
+
+.search-statustext {
+  color: {{FOREGROUND}};
+  font-size: {{TYPE_TITLE}};
+}
+
+.overview-tile,
+.grid-search-result,
+.list-search-result,
+.search-provider-icon {
+  color: {{FOREGROUND}};
+  background-color: transparent;
+  border: none;
+  border-radius: {{RADIUS_SURFACE}};
+  box-shadow: none;
+  transition-duration: 150ms;
+}
+
+.overview-tile:hover,
+.grid-search-result:hover,
+.list-search-result:hover,
+.search-provider-icon:hover,
+.app-folder:hover {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_TILE}};
+}
+
+.overview-tile:active,
+.grid-search-result:active,
+.list-search-result:active,
+.search-provider-icon:active,
+.app-folder:active {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_TILE_PRESSED}};
+}
+
+.overview-tile:selected,
+.overview-tile:highlighted,
+.grid-search-result:selected,
+.grid-search-result:highlighted,
+.list-search-result:selected,
+.list-search-result:highlighted,
+.search-provider-icon:selected {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_TILE_HOVER}};
+  box-shadow: none;
+}
+
+.overview-tile:focus,
+.grid-search-result:focus,
+.list-search-result:focus,
+.search-provider-icon:focus,
+.app-folder:focus {
+  box-shadow: inset 0 0 0 2px {{FOCUS}} !important;
+}
+
+.app-folder {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_TILE}};
+  border-radius: {{RADIUS_SURFACE}};
+}
+
+.app-folder-dialog {
+  border-radius: 30px;
+}
+
+.app-folder-dialog .folder-name-container .folder-name-label,
+.app-folder-dialog .folder-name-container .folder-name-entry {
+  color: {{FOREGROUND}};
+  font-size: {{TYPE_TITLE}};
+  font-weight: {{TYPE_HEADING_WEIGHT}};
+}
+
+.overview-tile .app-grid-running-dot,
+.grid-search-result .app-grid-running-dot,
+.app-well-app-running-dot {
+  background-color: {{FOREGROUND}};
+}
+
+#overviewGroup .page-indicator .page-indicator-icon {
+  background-color: {{FOREGROUND}};
+  border-radius: 999px;
+}
+
+.window-caption,
+.dash-label,
+.screenshot-ui-tooltip {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_POPUP}};
+  border: 1px solid {{GLASS_RIM}};
+  border-radius: 999px;
+  padding: 6px 12px;
+  box-shadow: 0 4px 14px {{SHADOW}};
+}
+
+.window-close,
+.window-close:hover {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_POPUP}};
+  border: 1px solid {{GLASS_RIM}};
+  border-radius: 999px;
+  box-shadow: 0 2px 8px {{SHADOW}};
+}
+
+.window-close:hover {
+  background-color: {{RAISED}};
+}
+
+/* Dock: the overview dash and Ubuntu Dock ------------------------------ */
+
+#dash .dash-background,
+#dashtodockContainer #dash .dash-background {
+  background-color: {{GLASS_PANEL}};
+  background-gradient-direction: vertical;
+  background-gradient-start: {{GLASS_PANEL_TOP}};
+  background-gradient-end: {{GLASS_PANEL}};
+  border: 1px solid {{GLASS_RIM}};
+  border-radius: {{RADIUS_DOCK}};
+  box-shadow: 0 8px 26px {{SHADOW}};
+}
+
+/* An extended Ubuntu Dock runs edge to edge as a glass rail. */
+#dashtodockContainer.extended #dash .dash-background {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+#dashtodockContainer.extended.left #dash .dash-background {
+  border-width: 0 1px 0 0;
+}
+
+#dashtodockContainer.extended.right #dash .dash-background {
+  border-width: 0 0 0 1px;
+}
+
+#dashtodockContainer.extended.bottom #dash .dash-background {
+  border-width: 1px 0 0 0;
+}
+
+#dash .dash-item-container .overview-tile .overview-icon,
+#dash .dash-item-container .grid-search-result .overview-icon,
+#dashtodockContainer #dash .dash-item-container .overview-tile .overview-icon {
+  color: {{FOREGROUND}};
+  background-color: transparent;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+#dash .dash-item-container .show-apps .overview-icon,
+#dashtodockContainer #dash .dash-item-container .show-apps .overview-icon {
+  color: {{FOREGROUND}};
+  background-color: {{GLASS_TILE}};
+  border-radius: 14px;
+}
+
+#dash .dash-item-container .overview-tile:hover .overview-icon,
+#dash .dash-item-container .show-apps:hover .overview-icon,
+#dash .dash-item-container .grid-search-result:hover .overview-icon,
+#dashtodockContainer #dash .dash-item-container StButton:hover .overview-icon {
+  background-color: {{GLASS_TILE_HOVER}};
+}
+
+#dash .dash-item-container .overview-tile:active .overview-icon,
+#dash .dash-item-container .show-apps:checked .overview-icon,
+#dash .dash-item-container .grid-search-result:active .overview-icon {
+  background-color: {{GLASS_TILE_PRESSED}};
+}
+
+#dash .dash-item-container .overview-tile,
+#dash .dash-item-container .show-apps,
+#dash .dash-item-container .overview-tile:hover,
+#dash .dash-item-container .show-apps:hover {
+  background-color: transparent;
+}
+
+#dash .dash-separator {
+  background-color: {{GLASS_LINE}};
+  width: 1px;
+}
+
+/* Lock screen ------------------------------------------------------------ */
+
+.unlock-dialog-clock .unlock-dialog-clock-time {
+  font-size: 7em;
+  font-weight: 300;
+  font-feature-settings: "tnum";
+}
+
+.unlock-dialog-clock .unlock-dialog-clock-date {
+  font-size: 1.45em;
+  font-weight: 500;
+}
+
+.unlock-dialog-clock .unlock-dialog-clock-hint {
+  font-weight: 500;
+}
+
+.unlock-dialog .login-dialog-prompt-entry,
+.login-dialog .login-dialog-prompt-entry {
+  color: white;
+  background-color: {{LOCK_FIELD}};
+  border: 1px solid {{LOCK_FIELD_EDGE}};
+  border-radius: 999px;
+  padding: 10px 16px;
+  caret-color: white;
+  selection-background-color: {{ACCENT}};
+  selected-color: {{ON_ACCENT}};
+}
+
+.unlock-dialog .login-dialog-prompt-entry:focus,
+.login-dialog .login-dialog-prompt-entry:focus {
+  border-color: white;
+  box-shadow: inset 0 0 0 1px white !important;
+}
+
+.unlock-dialog .login-dialog-button,
+.login-dialog .login-dialog-button {
+  color: white;
+  background-color: {{LOCK_FIELD}};
+  border-radius: 999px;
+}
+
+.unlock-dialog .login-dialog-button:hover,
+.login-dialog .login-dialog-button:hover {
+  background-color: {{LOCK_FIELD_EDGE}};
+}
+
+.unlock-dialog .login-dialog-button.default,
+.login-dialog .login-dialog-button.default {
+  color: {{ON_ACCENT}};
+  background-color: {{ACCENT}};
+}
+
+/* Scrollbars ------------------------------------------------------------- */
+
+StScrollBar > .vhandle,
+StScrollBar > .hhandle {
+  background-color: {{GLASS_TRACK}};
+  border-radius: 999px;
+}
+
+StScrollBar > .vhandle:hover,
+StScrollBar > .hhandle:hover {
+  background-color: {{MUTED}};
+}
+
+/* halo-tint {{GLASS_PANEL}} | {{GLASS_PANEL_TOP}} | {{FOREGROUND}} | {{GLASS_PRESSED}}
+ * The island tint. `scripts/theme apply` may lower these alphas to the
+ * lightest values that keep panel text at 4.5:1 over your wallpaper. */
+#panelLeft,
+#panelCenter,
+#panelRight {
+  background-color: {{GLASS_PANEL}};
+  background-gradient-direction: vertical;
+  background-gradient-start: {{GLASS_PANEL_TOP}};
+  background-gradient-end: {{GLASS_PANEL}};
+}
+/* halo-tint end */

@@ -1,0 +1,316 @@
+#!/usr/bin/env python3
+"""Build Folio, Meridian or Halo from design tokens and toolkit CSS."""
+import argparse
+import json
+from pathlib import Path
+import re
+import shutil
+import tempfile
+
+ROOT = Path(__file__).resolve().parent.parent
+SOURCE = ROOT / "src"
+TOKEN = re.compile(r"\{\{([A-Z][A-Z0-9_]*)\}\}")
+RGB = re.compile(r"#[0-9a-fA-F]{6}")
+RGBA = re.compile(r"rgba\((\d+), (\d+), (\d+), (0\.\d+)\)")
+PALETTES = ("light", "dark")
+OVERLAY_FAMILIES = ("halo",)
+CHECKS = [
+    ("Body on desktop surfaces", "FOREGROUND", "BACKGROUND", 4.5),
+    ("Body on popovers", "FOREGROUND", "SURFACE", 4.5),
+    ("Body on raised cards", "FOREGROUND", "RAISED", 4.5),
+    ("Body on active header", "FOREGROUND", "HEADER", 4.5),
+    ("Calendar headline", "FOREGROUND", "SURFACE", 3),
+    ("Secondary on popovers", "MUTED", "SURFACE", 4.5),
+    ("Secondary on cards", "MUTED", "RAISED", 4.5),
+    ("Secondary on overview", "MUTED", "OVERVIEW", 4.5),
+    ("Selected label", "ACCENT_INK", "SELECTION", 4.5),
+    ("Active toggle label", "ON_ACCENT", "ACCENT", 4.5),
+    ("Active toggle label, hover", "ON_ACCENT", "ACCENT_HOVER", 4.5),
+    ("Active toggle label, pressed", "ON_ACCENT", "ACCENT_PRESSED", 4.5),
+    ("Destructive action", "ON_ERROR", "ERROR", 4.5),
+    ("Warning status label", "ON_ACCENT", "WARNING", 4.5),
+    ("Success status label", "ON_ACCENT", "SUCCESS", 4.5),
+    ("Warning text", "WARNING", "SURFACE", 4.5),
+    ("Error text", "ERROR", "SURFACE", 4.5),
+    ("Success text", "SUCCESS", "SURFACE", 4.5),
+    ("Keyboard focus on surface", "FOCUS", "SURFACE", 3),
+    ("Keyboard focus on hovered control", "FOCUS", "HOVER", 3),
+    ("Keyboard focus on pressed control", "FOCUS", "PRESSED", 3),
+    ("Control outline on surface", "CONTROL_BORDER", "SURFACE", 3),
+    ("Control outline on secondary surface", "CONTROL_BORDER", "SUBTLE", 3),
+    ("Slider track on popover", "CONTROL_BORDER", "RAISED", 3),
+    ("Selected control edge", "ACCENT", "SURFACE", 3),
+    ("Clock index mark", "ACCENT", "HEADER", 3),
+    ("Active workspace outline", "ACCENT", "OVERVIEW", 3),
+]
+
+
+def luminance(value):
+    if not RGB.fullmatch(value):
+        raise ValueError(f"Contrast requires a six-digit hex color: {value}")
+    channels = [int(value[offset:offset + 2], 16) / 255 for offset in (1, 3, 5)]
+    linear = [(c / 12.92) if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+    return sum(coefficient * channel for coefficient, channel in zip((0.2126, 0.7152, 0.0722), linear))
+
+
+def background_samples(value):
+    color = RGBA.fullmatch(value)
+    if color is None:
+        return (value,)
+    alpha = float(color[4])
+    # Test the two extreme backdrop colors for an alpha-blended surface.
+    return tuple(
+        "#" + "".join(f"{round(alpha * int(color[channel]) + (1 - alpha) * backdrop):02x}" for channel in (1, 2, 3))
+        for backdrop in (0, 255)
+    )
+
+
+def composite(layers, backdrop):
+    """Blend opaque or rgba layers, bottom first, over a grey backdrop level."""
+    rgb = [backdrop] * 3
+    for layer in layers:
+        color = RGBA.fullmatch(layer)
+        if color is None:
+            luminance(layer)  # validates the hex form
+            rgb = [int(layer[offset:offset + 2], 16) for offset in (1, 3, 5)]
+        else:
+            alpha = float(color[4])
+            rgb = [alpha * int(color[channel + 1]) + (1 - alpha) * rgb[channel] for channel in range(3)]
+    return "#" + "".join(f"{round(channel):02x}" for channel in rgb)
+
+
+# Halo's Shell surfaces are translucent. Each check stacks the glass layers a
+# label sits on and tests them over pure black and pure white, so legibility
+# never depends on Blur my Shell or on the wallpaper.
+HALO_GLASS_CHECKS = [
+    ("Panel label over any backdrop", "FOREGROUND", ("GLASS_PANEL",), 4.5),
+    ("Panel label on the top sheen", "FOREGROUND", ("GLASS_PANEL_TOP",), 4.5),
+    ("Panel label, pressed", "FOREGROUND", ("GLASS_PANEL", "GLASS_PRESSED"), 4.5),
+    ("Dock icon on a pressed tile", "FOREGROUND", ("GLASS_PANEL", "GLASS_TILE_PRESSED"), 3),
+    ("Popup text", "FOREGROUND", ("GLASS_POPUP",), 4.5),
+    ("Popup text on the top sheen", "FOREGROUND", ("GLASS_POPUP_TOP",), 4.5),
+    ("Popup secondary text", "MUTED", ("GLASS_POPUP",), 4.5),
+    ("Tile label, pressed", "FOREGROUND", ("GLASS_POPUP", "GLASS_TILE_PRESSED"), 4.5),
+    ("Tile subtitle, pressed", "MUTED", ("GLASS_POPUP", "GLASS_TILE_PRESSED"), 4.5),
+    ("Submenu secondary text", "MUTED", ("GLASS_POPUP", "GLASS_RAISED"), 4.5),
+    ("Calendar weekday and links", "ACCENT_INK", ("GLASS_POPUP",), 4.5),
+    ("Error text on glass", "ERROR", ("GLASS_POPUP",), 4.5),
+    ("Warning text on glass", "WARNING", ("GLASS_POPUP",), 4.5),
+    ("Success text on glass", "SUCCESS", ("GLASS_POPUP",), 4.5),
+    ("Popup focus ring", "FOCUS", ("GLASS_POPUP",), 3),
+    ("Slider fill, switches and indicators", "GLASS_ACCENT", ("GLASS_POPUP",), 3),
+]
+
+
+def halo_checks():
+    replaced = {"Warning status label": ("ON_WARNING", "WARNING"),
+                "Success status label": ("ON_SUCCESS", "SUCCESS")}
+    checks = []
+    for name, first, second, minimum in CHECKS:
+        if name == "Clock index mark":
+            continue
+        first, second = replaced.get(name, (first, second))
+        checks.append((name, first, (second,), minimum))
+    return checks + HALO_GLASS_CHECKS
+
+
+def contrast_ratio(foreground, background):
+    bright, dark = sorted((luminance(foreground), luminance(background)), reverse=True)
+    return (bright + 0.05) / (dark + 0.05)
+
+
+def check_contrast(palettes, family="folio"):
+    lines = [
+        "| Role | Target | Light | Dark |",
+        "| --- | ---: | ---: | ---: |",
+    ]
+    checks = CHECKS
+    if family == "halo":
+        return check_layers(palettes, lines, halo_checks())
+    if family == "meridian":
+        checks = [entry for entry in checks if entry[0] != "Clock index mark"]
+        checks.extend([
+                  ("Panel labels over a light or dark background", "INSTRUMENT_INK", "PANEL_SURFACE", 4.5),
+                  ("Panel focus over a light or dark background", "FOCUS", "PANEL_SURFACE", 3),
+                  ("Workspace indicator over a light or dark background", "ACCENT_INK", "PANEL_SURFACE", 3),
+                  ("Popup text over a light or dark background", "FOREGROUND", "FLOAT_SURFACE", 4.5),
+                  ("Popup secondary text over a light or dark background", "MUTED", "FLOAT_SURFACE", 4.5),
+                  ("Active tile across the gradient, first endpoint", "ON_ACCENT", "AMBIENT_START", 4.5),
+                  ("Active tile across the gradient, second endpoint", "ON_ACCENT", "AMBIENT_END", 4.5),
+                  ("Calendar weekday", "ACCENT_INK", "SIGNAL_FIELD", 4.5),
+        ])
+    for name, first, second, minimum in checks:
+        row = [name, f"{minimum:g}:1"]
+        for variant in PALETTES:
+            colors = {**palettes["common"], **palettes[variant]}
+            ratio = min(contrast_ratio(colors[first], background) for background in background_samples(colors[second]))
+            if ratio < minimum:
+                raise ValueError(f"{variant} {name}: {ratio:.2f}:1 is below {minimum:g}:1")
+            row.append(f"{ratio:.2f}:1")
+        lines.append("| " + " | ".join(row) + " |")
+    return "\n".join(lines) + "\n"
+
+
+def check_layers(palettes, lines, checks):
+    for name, first, layers, minimum in checks:
+        row = [name, f"{minimum:g}:1"]
+        for variant in PALETTES:
+            colors = {**palettes["common"], **palettes[variant]}
+            stack = [colors[layer] for layer in layers]
+            ratio = min(contrast_ratio(colors[first], composite(stack, backdrop)) for backdrop in (0, 255))
+            if ratio < minimum:
+                raise ValueError(f"{variant} {name}: {ratio:.2f}:1 is below {minimum:g}:1")
+            row.append(f"{ratio:.2f}:1")
+        lines.append("| " + " | ".join(row) + " |")
+    return "\n".join(lines) + "\n"
+
+
+def render(name, values):
+    source = (SOURCE / name).read_text(encoding="utf-8")
+    try:
+        output = TOKEN.sub(lambda match: values[match[1]], source)
+    except KeyError as error:
+        raise ValueError(f"{name}: unknown design token {error}") from error
+    if "{{" in output or "}}" in output:
+        raise ValueError(f"{name}: unrendered template syntax")
+    return output
+
+
+def write(output, relative, content):
+    target = output / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content, encoding="utf-8")
+
+
+def build(output, palettes, report, family):
+    title = family.title()
+    family_dir = Path(family) if family in OVERLAY_FAMILIES else Path()
+    art = ROOT / "assets" / family_dir
+    adwaita = []
+    for variant in PALETTES:
+        values = {
+            **palettes["common"], **palettes[variant], "VARIANT": variant,
+            "GTK3_BASE": "gtk-contained-dark.css" if variant == "dark" else "gtk-contained.css",
+        }
+        name = f"{title}-{variant.title()}"
+        index = f"[Desktop Entry]\nType=X-GNOME-Metatheme\nName={title} {variant.title()}\n\n[X-GNOME-Metatheme]\nGtkTheme={name}\n"
+        write(output, f"{name}/index.theme", index)
+        write(output, f"{name}/gnome-shell/gnome-shell.css", render_family("shell.css", values, family_dir))
+        if family_dir.parts:
+            for artwork in sorted((art / "shell").glob(f"*-{variant}.png")):
+                shutil.copy2(artwork, output / name / "gnome-shell")
+        for toolkit in ("3", "4"):
+            css = render_family(f"gtk{toolkit}.css", values, family_dir)
+            for filename in ("gtk.css", "gtk-dark.css"):
+                write(output, f"{name}/gtk-{toolkit}.0/{filename}", css)
+        adwaita.append(render_family("adwaita.css", values, family_dir))
+    write(output, family_dir / "adwaita" / f"{family}.css", "\n".join(adwaita))
+    write(output, family_dir / "contrast.md", f"# {title} contrast checks\n\n" + report)
+    shutil.copytree(art / "wallpapers", output / family_dir / "wallpapers")
+    if family == "halo":
+        build_halo_extras(output / family_dir, palettes)
+
+
+def pixels(value):
+    return int(value.removesuffix("px"))
+
+
+def blur_my_shell(common):
+    """Blur my Shell settings whose radii come from Halo's own tokens."""
+    def blur(radius, brightness, saturation=1.2):
+        return [
+            {"type": "dual_kawase_blur", "id": f"effect_halo_blur_{radius}",
+             "params": {"unscaled_radius": radius, "brightness": brightness}},
+            {"type": "luminosity", "id": f"effect_halo_vibrancy_{radius}",
+             "params": {"saturation_multiplicator": saturation}},
+            {"type": "noise", "id": f"effect_halo_grain_{radius}", "params": {"noise": 0.03, "lightness": 0.5}},
+        ]
+
+    surface, sheet, dialog = (pixels(common[key]) for key in ("RADIUS_SURFACE", "RADIUS_SHEET", "RADIUS_DIALOG"))
+    glass = {"pipeline": "pipeline_halo", "pipeline-auto-mode": False}
+    return {
+        "pipelines": {
+            "pipeline_halo": {"name": "Halo", "effects": blur(32, 1.0)},
+            "pipeline_halo_overview_light": {"name": "Halo overview (light)", "effects": blur(60, 1.0, 1.1)},
+            "pipeline_halo_overview_dark": {"name": "Halo overview (dark)", "effects": blur(60, 0.7, 1.1)},
+            "pipeline_halo_lock": {"name": "Halo lock screen", "effects": blur(80, 0.6, 1.1)},
+        },
+        "components": {
+            # The islands are blurred one by one through Halo Glass and the popup settings.
+            "panel": {"blur": False, "override-background": False, "force-light-text": False},
+            "dash-to-dock": {**glass, "blur": True, "static-blur": True, "override-background": False,
+                             "unblur-in-overview": False},
+            "overview": {"blur": True, "pipeline-auto-mode": True,
+                         "pipeline-light": "pipeline_halo_overview_light",
+                         "pipeline-dark": "pipeline_halo_overview_dark",
+                         "style-components": 0, "workspace-corner-radius": 24},
+            "appfolder": {**glass, "blur": True, "style-dialogs": 0},
+            "lockscreen": {"blur": True, "pipeline": "pipeline_halo_lock", "pipeline-auto-mode": False},
+            "popup": {**glass, "blur": True, "static-blur": False, "override-background": False,
+                      "preserve-shell-theme": True, "rounded-corners": 0,
+                      "corner-radius": surface, "menu-corner-radius": surface, "submenu-corner-radius": 22,
+                      "quick-settings-corner-radius": sheet, "calendar-corner-radius": sheet,
+                      "screenshot-corner-radius": sheet, "notification-corner-radius": surface,
+                      "osd-corner-radius": dialog, "osd-window-corner-radius": 28,
+                      "dialog-corner-radius": dialog, "candidate-corner-radius": 12,
+                      "resize-popup-corner-radius": 12, "blur-behind-dialogs": True},
+        },
+    }
+
+
+def build_halo_extras(output, palettes):
+    """Terminal and editor palettes, folder icons and Blur my Shell settings."""
+    for variant in PALETTES:
+        values = {**palettes["common"], **palettes[variant], "VARIANT": variant}
+        write(output, f"editor/halo-{variant}.xml", render(Path("halo") / f"editor-{variant}.xml", values))
+        for svg in sorted((SOURCE / "halo" / "icons").glob("*.svg")):
+            write(output, f"icons/Halo-{variant.title()}/scalable/places/{svg.name}",
+                  render(Path("halo") / "icons" / svg.name, values))
+    values = {f"{key}_{variant.upper()}": value for variant in PALETTES
+              for key, value in {**palettes["common"], **palettes[variant]}.items()}
+    write(output, "terminal/halo.palette", render(Path("halo") / "terminal.palette", values))
+    write(output, "blur-my-shell.json", json.dumps(blur_my_shell(palettes["common"]), indent=2) + "\n")
+    shutil.copytree(SOURCE / "halo" / "extension", output / "extension" / "halo-glass@gnobramanium")
+    login = {**palettes["common"], **palettes["dark"], "VARIANT": "dark"}
+    write(output, "login/halo-login.css", render(Path("halo") / "login.css", login))
+
+
+def render_family(name, values, family_dir):
+    base = render(name, values)
+    if not family_dir.parts:
+        return base
+    return base + "\n" + render(family_dir / name, values)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--family", choices=OVERLAY_FAMILIES, default="halo")
+    parser.add_argument("--contrast", action="store_true", help="print token contrast without building")
+    args = parser.parse_args()
+    palettes = json.loads((SOURCE / "tokens.json").read_text(encoding="utf-8"))
+    if args.family in OVERLAY_FAMILIES:
+        overlay = json.loads((SOURCE / args.family / "tokens.json").read_text(encoding="utf-8"))
+        palettes = {name: {**base, **overlay[name]} for name, base in palettes.items()}
+    report = check_contrast(palettes, args.family)
+    if args.contrast:
+        print(report, end="")
+        return
+    with tempfile.TemporaryDirectory(prefix=".gnome-theme-build-", dir=ROOT) as directory:
+        output = Path(directory)
+        build(output, palettes, report, args.family)
+        final = ROOT / "build"
+        # Only replace outputs owned by this builder, after all templates validate.
+        final.mkdir(exist_ok=True)
+        for entry in output.iterdir():
+            target = final / entry.name
+            if target.is_dir() and not target.is_symlink():
+                shutil.rmtree(target)
+            entry.replace(target)
+    print(f"Built {args.family.title()} Light, Dark and supporting assets in build/")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (OSError, ValueError) as error:
+        raise SystemExit(str(error)) from error

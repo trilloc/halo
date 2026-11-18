@@ -1,0 +1,283 @@
+/* Folio for plain GTK 4. Keep the toolkit's native accessibility variants. */
+@media (prefers-contrast: more) {
+  @import url("resource:///org/gtk/libgtk/theme/Default/gtk.css");
+}
+
+@media (not (prefers-contrast: more)) {
+  @import url("resource:///org/gtk/libgtk/theme/Default/Default-{{VARIANT}}.css");
+  @define-color theme_bg_color {{BACKGROUND}};
+  @define-color theme_fg_color {{FOREGROUND}};
+  @define-color theme_base_color {{SURFACE}};
+  @define-color theme_text_color {{FOREGROUND}};
+  @define-color theme_selected_bg_color {{ACCENT}};
+  @define-color theme_selected_fg_color {{ON_ACCENT}};
+  @define-color borders {{BORDER}};
+  @define-color error_color {{ERROR}};
+  @define-color warning_color {{WARNING}};
+  @define-color success_color {{SUCCESS}};
+
+  .background, .background:backdrop { color: {{FOREGROUND}}; background-color: {{BACKGROUND}}; }
+  .view, iconview, .view:backdrop, iconview:backdrop, list, list:backdrop {
+    color: {{FOREGROUND}};
+    background-color: {{SURFACE}};
+  }
+  textview.view > text { color: {{FOREGROUND}}; }
+  .sidebar, list.sidebar, list.navigation-sidebar { color: {{FOREGROUND}}; background-color: {{SUBTLE}}; }
+  .dim-label, headerbar .subtitle, entry > text > placeholder { color: {{MUTED}}; opacity: 1; }
+
+  headerbar:not(.flat), .titlebar:not(headerbar):not(.flat) {
+    color: {{FOREGROUND}};
+    background-color: {{HEADER}};
+    background-image: none;
+    border-color: {{RULE}};
+    box-shadow: inset 0 -1px {{RULE}};
+  }
+
+  headerbar:not(.flat):backdrop, .titlebar:not(headerbar):not(.flat):backdrop {
+    color: {{FOREGROUND}};
+    background-color: {{HEADER_INACTIVE}};
+    border-color: {{BORDER}};
+    box-shadow: inset 0 -1px {{BORDER}};
+  }
+
+  headerbar .title, .titlebar .title { font-weight: {{TYPE_WEIGHT}}; }
+  headerbar windowcontrols button:not(.flat), headerbar windowcontrols button:not(.flat):hover,
+  headerbar windowcontrols button:not(.flat):active, headerbar windowcontrols button:not(.flat):backdrop {
+    background-color: transparent;
+    background-image: none;
+    border-color: transparent;
+  }
+  headerbar windowcontrols button:hover > image { background-color: {{HOVER}}; }
+  headerbar windowcontrols button:active > image { background-color: {{PRESSED}}; }
+
+  button:not(.flat):not(.circular) { border-radius: {{RADIUS_CONTROL}}; }
+  button:not(.flat), button:not(.flat):backdrop {
+    color: {{FOREGROUND}};
+    background-color: {{RAISED}};
+    background-image: none;
+    border-color: {{CONTROL_BORDER}};
+    text-shadow: none;
+    -gtk-icon-shadow: none;
+    box-shadow: none;
+  }
+
+  button:not(.flat):hover { background-color: {{HOVER}}; }
+  button:not(.flat):active { background-color: {{PRESSED}}; }
+  button:not(.flat):checked {
+    color: {{ACCENT_INK}};
+    background-color: {{SELECTION}};
+    border-color: {{ACCENT_INK}};
+  }
+
+  button.flat:hover { background-color: {{HOVER}}; }
+  button.flat:active, button.flat:checked { background-color: {{PRESSED}}; }
+  button.suggested-action.flat { color: {{ACCENT_INK}}; }
+  button.destructive-action.flat { color: {{ERROR}}; }
+
+  button.suggested-action:not(.flat), button.suggested-action:not(.flat):backdrop {
+    color: {{ON_ACCENT}};
+    background-color: {{ACCENT}};
+    background-image: none;
+    border-color: {{ACCENT}};
+    box-shadow: none;
+  }
+
+  button.suggested-action:not(.flat):hover { background-color: {{ACCENT_HOVER}}; }
+  button.suggested-action:not(.flat):active, button.suggested-action:not(.flat):checked {
+    background-color: {{ACCENT_PRESSED}};
+  }
+
+  button.destructive-action:not(.flat), button.destructive-action:not(.flat):backdrop {
+    color: {{ON_ERROR}};
+    background-color: {{ERROR}};
+    background-image: none;
+    border-color: {{ERROR}};
+    box-shadow: none;
+  }
+
+  button.destructive-action:not(.flat):hover { background-color: color-mix(in srgb, {{ERROR}} 92%, {{ON_ERROR}}); }
+  button.destructive-action:not(.flat):active, button.destructive-action:not(.flat):checked {
+    background-color: color-mix(in srgb, {{ERROR}} 87%, {{ON_ERROR}});
+  }
+
+  button:not(.flat):disabled, button:not(.flat):disabled:checked,
+  button.suggested-action:not(.flat):disabled, button.suggested-action:not(.flat):disabled:checked,
+  button.destructive-action:not(.flat):disabled, button.destructive-action:not(.flat):disabled:checked {
+    color: {{DISABLED}};
+    background-color: {{SUBTLE}};
+    background-image: none;
+    border-color: {{BORDER}};
+  }
+
+  button.flat:disabled, button.flat:disabled:checked,
+  button.suggested-action.flat:disabled, button.destructive-action.flat:disabled { color: {{DISABLED}}; }
+
+  button:focus:focus-visible, switch:focus:focus-visible, checkbutton:focus:focus-visible,
+  scale:focus:focus-visible, row:focus:focus-visible, gridview > child:focus:focus-visible,
+  treeview:focus:focus-visible, notebook > header > tabs > tab:focus:focus-visible {
+    outline: {{FOCUS_WIDTH}} solid {{FOCUS}};
+    outline-offset: -3px;
+  }
+
+  button.suggested-action:not(.flat):focus:focus-visible,
+  row:selected:focus:focus-visible, gridview > child:selected:focus:focus-visible { outline-color: {{ON_ACCENT}}; }
+  button.destructive-action:not(.flat):focus:focus-visible { outline-color: {{ON_ERROR}}; }
+  switch:checked:focus:focus-visible { outline-offset: 1px; }
+
+  entry:not(.flat), entry:not(.flat):backdrop, spinbutton:not(.vertical) {
+    color: {{FOREGROUND}};
+    background-color: {{SURFACE}};
+    background-image: none;
+    border-color: {{CONTROL_BORDER}};
+    box-shadow: none;
+  }
+
+  entry:not(.flat) { border-radius: {{RADIUS_CONTROL}}; }
+  entry > text, textview > text { caret-color: {{ACCENT_INK}}; }
+  entry:not(.flat):focus-within, spinbutton:not(.vertical):focus-within {
+    border-color: {{FOCUS}};
+    outline-color: {{FOCUS}};
+    box-shadow: inset 0 0 0 1px {{FOCUS}};
+  }
+
+  entry:not(.flat):disabled, entry:not(.flat):disabled:backdrop, spinbutton:not(.vertical):disabled {
+    color: {{DISABLED}};
+    background-color: {{SUBTLE}};
+    border-color: {{BORDER}};
+  }
+
+  entry:disabled > text > placeholder { color: {{DISABLED}}; }
+  entry selection, label > selection, textview > text > selection {
+    color: {{FOREGROUND}};
+    background-color: {{SELECTION}};
+  }
+
+  entry:focus-within selection, label > selection:focus-within, textview > text > selection:focus-within {
+    color: {{ON_ACCENT}};
+    background-color: {{ACCENT}};
+  }
+
+  row.activatable:hover, gridview > child:hover, listview > row:hover { background-color: {{HOVER}}; }
+  row.activatable:active, gridview > child:active, listview > row:active { background-color: {{PRESSED}}; }
+  row:selected, row:selected:hover, row:selected:focus, gridview > child:selected, gridview > child:selected:hover,
+  treeview.view:selected, .view:selected, .view:selected:focus, iconview:selected, iconview:selected:focus {
+    color: {{ON_ACCENT}};
+    background-color: {{ACCENT}};
+  }
+
+  .navigation-sidebar > row:selected, .navigation-sidebar > row:selected:hover,
+  row:selected:backdrop, gridview > child:selected:backdrop, .view:selected:backdrop, iconview:selected:backdrop {
+    color: {{FOREGROUND}};
+    background-color: {{SELECTION}};
+  }
+
+  .navigation-sidebar > row:selected { box-shadow: inset 0 -2px {{ACCENT}}; }
+  .navigation-sidebar > row:selected:focus:focus-visible { outline-color: {{FOCUS}}; }
+  row:selected .dim-label, gridview > child:selected .dim-label { color: inherit; }
+
+  check, radio {
+    color: {{FOREGROUND}};
+    background-color: {{SURFACE}};
+    background-image: none;
+    border-color: {{CONTROL_BORDER}};
+    box-shadow: none;
+  }
+
+  check { border-radius: {{RADIUS_SMALL}}; }
+  check:hover, radio:hover { background-color: {{HOVER}}; background-image: none; }
+  check:checked, radio:checked, check:indeterminate, radio:indeterminate {
+    color: {{ON_ACCENT}};
+    background-color: {{ACCENT}};
+    background-image: none;
+    border-color: {{ACCENT}};
+  }
+
+  check:checked:hover, radio:checked:hover, check:indeterminate:hover, radio:indeterminate:hover {
+    background-color: {{ACCENT_HOVER}};
+    background-image: none;
+  }
+
+  check:checked:active, radio:checked:active, check:indeterminate:active, radio:indeterminate:active {
+    background-color: {{ACCENT_PRESSED}};
+    background-image: none;
+  }
+
+  check:disabled, radio:disabled, check:disabled:checked, radio:disabled:checked {
+    color: {{DISABLED}};
+    background-color: {{SUBTLE}};
+    background-image: none;
+    border-color: {{BORDER}};
+  }
+
+  switch { background-color: {{SUBTLE}}; border-color: {{CONTROL_BORDER}}; }
+  switch:checked { color: {{ON_ACCENT}}; background-color: {{ACCENT}}; border-color: {{ACCENT}}; }
+  switch > slider, switch:hover > slider {
+    background-color: {{CONTROL_BORDER}};
+    background-image: none;
+    border-color: {{CONTROL_BORDER}};
+    box-shadow: none;
+  }
+
+  switch:checked > slider, switch:checked:hover > slider { background-color: {{ON_ACCENT}}; border-color: {{ACCENT}}; }
+  switch:disabled { background-color: {{SUBTLE}}; border-color: {{BORDER}}; }
+  switch:disabled > slider { background-color: {{DISABLED}}; background-image: none; border-color: {{BORDER}}; }
+  scale > trough, progressbar > trough, levelbar > trough { background-color: {{SUBTLE}}; border-color: {{CONTROL_BORDER}}; }
+  scale > trough > highlight, progressbar > trough > progress, levelbar block.filled {
+    background-color: {{ACCENT}};
+    background-image: none;
+    border-color: {{ACCENT}};
+  }
+
+  levelbar block.low { background-color: {{WARNING}}; border-color: {{WARNING}}; }
+  levelbar block.high, levelbar block.full { background-color: {{SUCCESS}}; border-color: {{SUCCESS}}; }
+  scale > trough > slider, scale > trough > slider:hover {
+    background-color: {{RAISED}};
+    background-image: none;
+    border-color: {{CONTROL_BORDER}};
+  }
+
+  scale > value { color: {{MUTED}}; }
+
+  notebook > header, notebook > header:backdrop, menubar {
+    color: {{FOREGROUND}};
+    background-color: {{SUBTLE}};
+    border-color: {{BORDER}};
+  }
+
+  notebook > header > tabs > tab { color: {{MUTED}}; }
+  notebook > header > tabs > tab:hover { color: {{FOREGROUND}}; background-color: {{HOVER}}; }
+  notebook > header > tabs > tab:checked {
+    color: {{ACCENT_INK}};
+    background-color: {{SELECTION}};
+    border-color: {{ACCENT}};
+    box-shadow: none;
+  }
+
+  notebook > header.top > tabs > tab:checked { box-shadow: inset 0 -2px {{ACCENT}}; }
+  notebook > header.bottom > tabs > tab:checked { box-shadow: inset 0 2px {{ACCENT}}; }
+  notebook > header.left > tabs > tab:checked { box-shadow: inset -2px 0 {{ACCENT}}; }
+  notebook > header.right > tabs > tab:checked { box-shadow: inset 2px 0 {{ACCENT}}; }
+  notebook:focus:focus-visible > header > tabs > tab:checked { outline-color: {{FOCUS}}; }
+
+  popover.background > arrow, popover.background > contents, popover.menu.background > contents, tooltip.background {
+    color: {{FOREGROUND}};
+    background-color: {{RAISED}};
+    border-color: {{BORDER}};
+    box-shadow: 0 6px 20px {{SHADOW}};
+  }
+
+  popover.background > contents { border-radius: {{RADIUS_SURFACE}}; }
+  popover.menu modelbutton:selected { color: {{ACCENT_INK}}; background-color: {{SELECTION}}; }
+  popover.menu modelbutton:selected:active { background-color: {{PRESSED}}; }
+  popover.menu accelerator, tooltip * { color: {{FOREGROUND}}; }
+  separator { background-color: {{BORDER}}; }
+  scrollbar > range > trough > slider { background-color: {{CONTROL_BORDER}}; }
+  scrollbar > range > trough > slider:hover { background-color: {{MUTED}}; }
+  scrollbar > range > trough > slider:hover:active { background-color: {{ACCENT_INK}}; }
+  scrollbar > range > trough > slider:disabled { background-color: transparent; }
+
+  link, label:link, button:link { color: {{ACCENT_INK}}; }
+  .success { color: {{SUCCESS}}; }
+  .warning { color: {{WARNING}}; }
+  .error, label.error { color: {{ERROR}}; }
+}

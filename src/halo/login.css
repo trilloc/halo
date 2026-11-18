@@ -1,0 +1,131 @@
+
+/* Halo login screen. Appended to the system GDM stylesheet by scripts/halo-login. */
+
+#lockDialogGroup {
+  background-color: {{OVERVIEW}};
+  background-image: url("file:///usr/share/backgrounds/gnobramanium/halo-dark.jpg");
+  background-size: cover;
+  background-position: center;
+}
+
+#panel.login-screen,
+#panel.unlock-screen {
+  background-color: transparent !important;
+  background-gradient-direction: none;
+  border-color: transparent;
+  box-shadow: none !important;
+}
+
+#panel.login-screen .panel-button,
+#panel.login-screen .system-status-icon,
+#panel.login-screen .clock {
+  color: white !important;
+}
+
+#panel.login-screen .panel-button {
+  border: 4px solid transparent;
+  border-radius: {{RADIUS_CONTROL}};
+}
+
+#panel.login-screen .panel-button:hover,
+#panel.login-screen .panel-button:checked {
+  box-shadow: inset 0 0 0 100px {{LOCK_FIELD}};
+}
+
+.login-dialog {
+  color: white;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.login-dialog .login-dialog-prompt-entry {
+  color: white;
+  background-color: {{LOCK_FIELD}};
+  border: 1px solid {{LOCK_FIELD_EDGE}};
+  border-radius: 999px;
+  padding: 10px 16px;
+  caret-color: white;
+  selection-background-color: {{ACCENT}};
+  selected-color: {{ON_ACCENT}};
+}
+
+.login-dialog .login-dialog-prompt-entry:focus {
+  border-color: white;
+  box-shadow: inset 0 0 0 1px white !important;
+}
+
+.login-dialog .login-dialog-button,
+.login-dialog-not-listed-button,
+.login-dialog .cancel-button,
+.login-dialog .switch-user-button,
+.login-dialog .login-dialog-session-list-button {
+  color: white;
+  background-color: {{LOCK_FIELD}};
+  border: none;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+.login-dialog .login-dialog-button:hover,
+.login-dialog-not-listed-button:hover,
+.login-dialog .cancel-button:hover,
+.login-dialog .switch-user-button:hover,
+.login-dialog .login-dialog-session-list-button:hover {
+  background-color: {{LOCK_FIELD_EDGE}};
+}
+
+.login-dialog .login-dialog-button:focus,
+.login-dialog-not-listed-button:focus {
+  box-shadow: inset 0 0 0 2px white !important;
+}
+
+.login-dialog .login-dialog-button.default {
+  color: {{ON_ACCENT}};
+  background-color: {{ACCENT}};
+}
+
+.login-dialog-user-list .login-dialog-user-list-item {
+  color: white;
+  border-radius: {{RADIUS_TILE}};
+  padding: 10px 14px;
+}
+
+.login-dialog-user-list .login-dialog-user-list-item:hover,
+.login-dialog-user-list .login-dialog-user-list-item:focus,
+.login-dialog-user-list .login-dialog-user-list-item:selected {
+  background-color: {{LOCK_FIELD}};
+}
+
+.login-dialog-user-list .login-dialog-user-list-item:focus {
+  box-shadow: inset 0 0 0 2px white !important;
+}
+
+.login-dialog-user-list .login-dialog-user-list-item .user-widget-label,
+.login-dialog .user-widget-label {
+  color: white;
+  font-weight: {{TYPE_WEIGHT}};
+}
+
+.user-icon,
+.login-dialog .user-icon {
+  border: 2px solid {{LOCK_FIELD_EDGE}};
+  border-radius: 999px;
+  background-color: {{LOCK_FIELD}};
+  color: white;
+}
+
+.login-dialog .caps-lock-warning-label,
+.login-dialog .login-dialog-message-warning {
+  color: {{WARNING}};
+}
+
+.login-dialog .login-dialog-message-hint,
+.login-dialog .login-dialog-banner,
+.login-dialog-not-listed-label {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.login-dialog-logo-bin {
+  padding: 24px 0;
+}

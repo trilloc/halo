@@ -1,0 +1,115 @@
+/* Halo for GTK 3: flat header bars, a tinted sidebar and rounded selections. */
+headerbar, .titlebar:not(headerbar),
+headerbar:backdrop, .titlebar:backdrop:not(headerbar) {
+  background-color: {{HEADER}};
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+headerbar .title, .titlebar:not(headerbar) .title { font-weight: {{TYPE_WEIGHT}}; }
+headerbar:backdrop .title, headerbar:backdrop button.titlebutton { color: {{MUTED}}; }
+
+decoration, window.csd > decoration { border-radius: {{RADIUS_WINDOW}} {{RADIUS_WINDOW}} 0 0; }
+
+button:not(.flat):not(.suggested-action):not(.destructive-action):not(:checked):not(:disabled) {
+  background-color: {{APP_FILL}};
+  background-image: none;
+  border-color: transparent;
+  border-radius: 10px;
+}
+
+button:not(.flat):not(.suggested-action):not(.destructive-action):not(:checked):not(:disabled):hover {
+  background-color: {{APP_FILL_HOVER}};
+}
+
+button:not(.flat):not(.suggested-action):not(.destructive-action):not(:checked):not(:disabled):active {
+  background-color: {{APP_FILL_PRESSED}};
+}
+
+entry:not(.flat) {
+  background-color: {{APP_FILL}};
+  border-color: transparent;
+}
+
+entry:not(.flat):focus {
+  border-color: {{FOCUS}};
+  box-shadow: inset 0 0 0 1px {{FOCUS}};
+}
+
+.sidebar, placessidebar list, list.navigation-sidebar { background-color: {{SUBTLE}}; }
+
+.navigation-sidebar > row, placessidebar row {
+  border-radius: {{RADIUS_CONTROL}};
+  margin: 1px 6px;
+}
+
+.navigation-sidebar > row:selected, placessidebar row:selected,
+.navigation-sidebar > row:selected:hover, placessidebar row:selected:hover {
+  color: {{ACCENT_INK}};
+  background-color: {{SELECTION}};
+  box-shadow: none;
+}
+
+list > row:selected, list > row:selected:hover, list > row:selected:focus {
+  color: {{FOREGROUND}};
+  background-color: {{SELECTION}};
+}
+
+popover { border-radius: 16px; }
+
+/* Desktop Icons NG marks the desktop popup and its submenus with this class. */
+menu.desktopmenu:not(.fileitemmenu) {
+  min-width: 220px;
+  padding: 7px;
+  color: {{FOREGROUND}};
+  background-color: {{RAISED}};
+  background-image: linear-gradient(to bottom, {{RAISED}}, {{SUBTLE}});
+  border: 1px solid {{BORDER}};
+  border-radius: {{RADIUS_SURFACE}};
+  box-shadow: 0 8px 24px {{SHADOW_DEEP}};
+}
+
+menu.desktopmenu:not(.fileitemmenu) > menuitem {
+  min-height: 24px;
+  padding: 3px 12px;
+  color: {{FOREGROUND}};
+  border-radius: {{RADIUS_SMALL}};
+  background-image: none;
+}
+
+menu.desktopmenu:not(.fileitemmenu) > menuitem:hover,
+menu.desktopmenu:not(.fileitemmenu) > menuitem:selected {
+  color: {{ACCENT_INK}};
+  background-color: {{SELECTION}};
+}
+
+menu.desktopmenu:not(.fileitemmenu) > menuitem:focus {
+  box-shadow: inset 0 0 0 2px {{FOCUS}};
+}
+
+menu.desktopmenu:not(.fileitemmenu) > menuitem:disabled {
+  color: {{DISABLED}};
+  background-color: transparent;
+}
+
+menu.desktopmenu:not(.fileitemmenu) > separator {
+  min-height: 1px;
+  margin: 4px 8px;
+  padding: 0;
+  background-color: {{BORDER}};
+}
+
+notebook > header {
+  background-color: {{HEADER}};
+  border-color: {{BORDER}};
+}
+
+notebook > header > tabs > tab { border-radius: {{RADIUS_CONTROL}}; }
+notebook > header.top > tabs > tab:checked, notebook > header.bottom > tabs > tab:checked,
+notebook > header.left > tabs > tab:checked, notebook > header.right > tabs > tab:checked {
+  color: {{ACCENT_INK}};
+  background-color: {{SELECTION}};
+  border-color: transparent;
+  box-shadow: none;
+}

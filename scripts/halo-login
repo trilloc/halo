@@ -1,0 +1,157 @@
+#!/usr/bin/python3
+"""Give the GDM login screen Halo's look, or restore the system login theme.
+
+GDM loads its stylesheet from the gdm-theme.gresource alternative. Install
+copies the bundle that alternative currently selects, appends Halo's login
+styles to its GDM stylesheets, registers the result as a separate alternative
+at priority 0 and selects it. Restore returns the previous selection and
+removes Halo's files. Run with sudo. Changes show after you log out.
+"""
+
+import argparse
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[1]
+BUILD = ROOT / "build" / "halo"
+NAME = "gdm-theme.gresource"
+LINK = Path("/usr/share/gnome-shell") / NAME
+OURS = Path("/usr/share/gnome-shell/theme/Halo") / NAME
+BACKGROUND = Path("/usr/share/backgrounds/gnobramanium/halo-dark.jpg")
+STATE = Path("/var/lib/gnobramanium/halo-login.json")
+MARKER = "/* Halo login screen */"
+
+
+def run(*command, capture=True):
+    result = subprocess.run(command, check=True, text=True, capture_output=capture)
+    return result.stdout if capture else ""
+
+
+def query():
+    try:
+        output = run("update-alternatives", "--query", NAME)
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        raise SystemExit(f"This system does not select its login theme through the {NAME} alternative.")
+    fields = {}
+    for line in output.splitlines():
+        key, _, value = line.partition(": ")
+        if key in ("Status", "Value") and key not in fields:
+            fields[key] = value.strip()
+    return fields
+
+
+def require_root():
+    if os.geteuid() != 0:
+        raise SystemExit("Run this with sudo: sudo ./scripts/halo-login " + " ".join(sys.argv[1:]))
+
+
+def load_state():
+    return json.loads(STATE.read_text()) if STATE.is_file() else None
+
+
+def build_bundle(base, target):
+    login_css = (BUILD / "login" / "halo-login.css").read_text(encoding="utf-8")
+    resources = run("gresource", "list", str(base)).split()
+    stylesheets = [path for path in resources
+                   if path.startswith("/org/gnome/shell/theme/gdm") and path.endswith(".css")]
+    if not stylesheets:
+        raise SystemExit(f"{base} has no GDM stylesheet. The login screen was left unchanged.")
+    with tempfile.TemporaryDirectory(prefix="halo-login-") as temp:
+        source = Path(temp) / "source"
+        for path in resources:
+            destination = source / path.lstrip("/")
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            with destination.open("wb") as output:
+                subprocess.run(["gresource", "extract", str(base), path], check=True, stdout=output)
+        for path in stylesheets:
+            stylesheet = source / path.lstrip("/")
+            original = stylesheet.read_text(encoding="utf-8")
+            if MARKER in original:
+                original = original[:original.index(MARKER)]
+            stylesheet.write_text(original.rstrip() + "\n\n" + MARKER + "\n" + login_css, encoding="utf-8")
+        files = "\n".join(f"    <file>{path.lstrip('/')}</file>" for path in resources)
+        manifest = Path(temp) / "halo-login.gresource.xml"
+        manifest.write_text(f'<?xml version="1.0" encoding="UTF-8"?>\n<gresources>\n'
+                            f'  <gresource prefix="/">\n{files}\n  </gresource>\n</gresources>\n')
+        compiled = Path(temp) / NAME
+        run("glib-compile-resources", f"--sourcedir={source}", f"--target={compiled}", str(manifest))
+        if not set(stylesheets) <= set(run("gresource", "list", str(compiled)).split()):
+            raise SystemExit("The rebuilt login theme is incomplete. The login screen was left unchanged.")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        staged = target.with_suffix(".new")
+        shutil.copyfile(compiled, staged)
+        staged.chmod(0o644)
+        os.replace(staged, target)
+    return stylesheets
+
+
+def install():
+    require_root()
+    if not (BUILD / "login" / "halo-login.css").is_file():
+        raise SystemExit("Build Halo first: ./scripts/build --family halo")
+    current = query()
+    state = load_state()
+    if current.get("Value") == str(OURS) and state:
+        base = Path(state["base"])
+    else:
+        base = Path(current["Value"])
+        state = {"base": str(base), "status": current.get("Status", "auto"), "value": str(base)}
+    if not base.is_file():
+        raise SystemExit(f"The current login theme {base} is missing.")
+    stylesheets = build_bundle(base, OURS)
+    BACKGROUND.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(BUILD / "wallpapers" / "halo-dark.jpg", BACKGROUND)
+    BACKGROUND.chmod(0o644)
+    STATE.parent.mkdir(parents=True, exist_ok=True)
+    STATE.write_text(json.dumps(state, indent=2) + "\n")
+    run("update-alternatives", "--install", str(LINK), NAME, str(OURS), "0")
+    run("update-alternatives", "--set", NAME, str(OURS))
+    print(f"Halo login styles added to {', '.join(Path(path).name for path in stylesheets)} from {base}.")
+    print("Log out to see the login screen. To undo: sudo ./scripts/halo-login restore")
+
+
+def restore():
+    require_root()
+    state = load_state()
+    current = query()
+    if state and current.get("Value") == str(OURS):
+        if state["status"] == "manual" and Path(state["value"]).is_file():
+            run("update-alternatives", "--set", NAME, state["value"])
+        else:
+            run("update-alternatives", "--auto", NAME)
+    if OURS.exists():
+        subprocess.run(["update-alternatives", "--remove", NAME, str(OURS)], check=False,
+                       capture_output=True)
+        OURS.unlink()
+        if not any(OURS.parent.iterdir()):
+            OURS.parent.rmdir()
+    BACKGROUND.unlink(missing_ok=True)
+    if BACKGROUND.parent.is_dir() and not any(BACKGROUND.parent.iterdir()):
+        BACKGROUND.parent.rmdir()
+    STATE.unlink(missing_ok=True)
+    print(f"Login theme restored to {query().get('Value')}. Log out to see it.")
+
+
+def status():
+    current = query()
+    print(f"Login theme: {current.get('Value')} ({current.get('Status')})")
+    print("Halo login screen: " + ("active" if current.get("Value") == str(OURS) else "not active"))
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("command", choices=("install", "restore", "status"))
+    command = parser.parse_args().command
+    {"install": install, "restore": restore, "status": status}[command]()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except subprocess.CalledProcessError as error:
+        sys.exit(f"Halo login: {' '.join(map(str, error.cmd))} failed: {(error.stderr or '').strip()}")

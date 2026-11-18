@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Halo Light for GtkSourceView 5 (Text Editor, Builder and other editors). -->
+<style-scheme id="halo-light" name="Halo Light" version="1.0">
+  <author>Gnobramanium</author>
+  <description>Clear-glass companion scheme for the Halo GNOME theme.</description>
+  <metadata>
+    <property name="variant">light</property>
+    <property name="light-variant">halo-light</property>
+    <property name="dark-variant">halo-dark</property>
+  </metadata>
+
+  <color name="bg" value="{{BACKGROUND}}"/>
+  <color name="fg" value="{{FOREGROUND}}"/>
+  <color name="muted" value="{{MUTED}}"/>
+  <color name="accent" value="{{ACCENT}}"/>
+  <color name="ink" value="{{ACCENT_INK}}"/>
+  <color name="selection" value="{{SELECTION}}"/>
+  <color name="line" value="#f1f3f9"/>
+  <color name="gutter" value="#8a90a6"/>
+  <color name="comment" value="#646a82"/>
+  <color name="keyword" value="#2340d6"/>
+  <color name="type" value="#0b6f87"/>
+  <color name="function" value="#6d33c7"/>
+  <color name="string" value="#0d6342"/>
+  <color name="number" value="#7a4600"/>
+  <color name="preproc" value="#b42346"/>
+  <color name="special" value="#a3420b"/>
+  <color name="search" value="#fbe3a8"/>
+  <color name="error" value="{{ERROR}}"/>
+  <color name="warning" value="{{WARNING}}"/>
+  <color name="added" value="{{SUCCESS}}"/>
+
+  <style name="text" foreground="fg" background="bg"/>
+  <style name="selection" foreground="fg" background="selection"/>
+  <style name="selection-unfocused" foreground="fg" background="selection"/>
+  <style name="cursor" foreground="ink"/>
+  <style name="secondary-cursor" foreground="muted"/>
+  <style name="current-line" background="line"/>
+  <style name="current-line-number" foreground="fg" background="line" bold="true"/>
+  <style name="line-numbers" foreground="gutter" background="bg"/>
+  <style name="right-margin" foreground="gutter" background="line"/>
+  <style name="draw-spaces" foreground="gutter"/>
+  <style name="background-pattern" background="line"/>
+  <style name="bracket-match" foreground="ink" background="selection" bold="true"/>
+  <style name="bracket-mismatch" foreground="error" underline="error"/>
+  <style name="search-match" background="search"/>
+  <style name="map-overlay" background="selection"/>
+
+  <style name="def:base-n-integer" foreground="number"/>
+  <style name="def:boolean" foreground="number"/>
+  <style name="def:builtin" foreground="type"/>
+  <style name="def:character" foreground="string"/>
+  <style name="def:comment" foreground="comment" italic="true"/>
+  <style name="def:constant" foreground="number"/>
+  <style name="def:decimal" foreground="number"/>
+  <style name="def:doc-comment-element" foreground="comment" bold="true"/>
+  <style name="def:error" underline="error" underline-color="error"/>
+  <style name="def:floating-point" foreground="number"/>
+  <style name="def:function" foreground="function"/>
+  <style name="def:heading" foreground="ink" bold="true"/>
+  <style name="def:identifier" foreground="fg"/>
+  <style name="def:inline-code" foreground="special"/>
+  <style name="def:keyword" foreground="keyword" bold="true"/>
+  <style name="def:link-text" foreground="ink" underline="single"/>
+  <style name="def:net-address" foreground="ink" underline="single"/>
+  <style name="def:note" foreground="ink" bold="true"/>
+  <style name="def:number" foreground="number"/>
+  <style name="def:operator" foreground="fg"/>
+  <style name="def:preprocessor" foreground="preproc"/>
+  <style name="def:shebang" foreground="comment" bold="true"/>
+  <style name="def:special-char" foreground="special"/>
+  <style name="def:special-constant" foreground="number"/>
+  <style name="def:statement" foreground="keyword"/>
+  <style name="def:string" foreground="string"/>
+  <style name="def:type" foreground="type"/>
+  <style name="def:underlined" underline="single"/>
+  <style name="def:warning" underline="error" underline-color="warning"/>
+  <style name="def:emphasis" italic="true"/>
+  <style name="def:strong-emphasis" bold="true"/>
+  <style name="def:insertion" foreground="added"/>
+  <style name="def:deletion" foreground="error"/>
+
+  <style name="diff:added-line" foreground="added"/>
+  <style name="diff:removed-line" foreground="error"/>
+  <style name="diff:changed-line" foreground="warning"/>
+  <style name="diff:location" foreground="ink" bold="true"/>
+  <style name="diff:special-case" foreground="function"/>
+</style-scheme>

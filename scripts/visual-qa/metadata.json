@@ -1,0 +1,6 @@
+{
+  "uuid": "visual-qa@local",
+  "name": "Visual QA",
+  "description": "Captures GNOME components inside the disposable test session.",
+  "shell-version": ["50"]
+}

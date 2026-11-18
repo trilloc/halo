@@ -1,0 +1,815 @@
+/* Folio for GNOME Shell 50. St supplies the current session-mode stylesheet
+ * as the lower-priority default, including Ubuntu mode and untouched widgets. */
+
+stage {
+  color: {{FOREGROUND}};
+  font-size: 1em;
+}
+
+.shell-link {
+  color: {{ACCENT_INK}};
+  text-decoration: underline;
+}
+
+.shell-link:hover {
+  color: {{FOREGROUND}};
+}
+
+/* The panel uses the width and type rhythm of a running header.
+ * Ubuntu's Yaru mode marks its black panel and white icons !important. */
+#panel,
+#panel:overview {
+  height: {{PANEL_HEIGHT}};
+  background-color: {{HEADER}} !important;
+  box-shadow: inset 0 -1px 0 {{RULE}} !important;
+  color: {{FOREGROUND}};
+  font-weight: {{TYPE_WEIGHT}};
+}
+
+#panel .panel-button,
+#panel:overview .panel-button {
+  border-radius: {{RADIUS_CONTROL}};
+  color: {{FOREGROUND}};
+  font-weight: {{TYPE_WEIGHT}} !important;
+  box-shadow: none;
+}
+
+#panel .panel-button:hover {
+  box-shadow: inset 0 0 0 100px {{HOVER}};
+}
+
+#panel .panel-button:active,
+#panel .panel-button:checked {
+  box-shadow: inset 0 0 0 100px {{SELECTION}};
+  color: {{ACCENT_INK}};
+}
+
+#panel .panel-button:focus {
+  border-color: {{FOCUS}};
+}
+
+#panel .system-status-icon {
+  color: {{FOREGROUND}} !important;
+}
+
+#panel .panel-button#panelActivities .workspace-dot {
+  border-radius: 3px;
+  background-color: {{ACCENT_INK}} !important;
+}
+
+#panel .panel-button.clock-display .clock {
+  border-width: 3px 6px;
+  border-radius: {{RADIUS_SMALL}} {{RADIUS_SMALL}} 0 0;
+  box-shadow: inset 0 -2px 0 {{ACCENT}};
+}
+
+#panel .panel-button.clock-display:hover .clock {
+  background-color: {{HOVER}};
+  box-shadow: inset 0 -2px 0 {{ACCENT}};
+}
+
+#panel .panel-button.clock-display:checked .clock,
+#panel .panel-button.clock-display:active .clock {
+  background-color: {{SELECTION}};
+  color: {{ACCENT_INK}};
+  box-shadow: inset 0 -2px 0 {{ACCENT}};
+}
+
+#panel .panel-button.clock-display:focus .clock {
+  box-shadow: inset 0 0 0 {{FOCUS_WIDTH}} {{FOCUS}};
+}
+
+#panel .panel-button.screen-recording-indicator {
+  color: {{ON_ERROR}};
+  background-color: {{ERROR}};
+}
+
+#panel .panel-button.screen-sharing-indicator {
+  color: {{ON_ACCENT}};
+  background-color: {{WARNING}};
+}
+
+#panel .panel-button.screen-recording-indicator:hover,
+#panel .panel-button.screen-sharing-indicator:hover {
+  box-shadow: inset 0 0 0 2px {{ON_ERROR}};
+}
+
+/* Preserve the upstream white-on-dark screen shield when applicable. */
+#panel.unlock-screen,
+#panel.login-screen {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+#panel.unlock-screen .panel-button,
+#panel.login-screen .panel-button,
+#panel.unlock-screen .system-status-icon,
+#panel.login-screen .system-status-icon {
+  color: white !important;
+}
+
+/* Opaque popovers and a quiet edge stay readable across wallpapers. */
+.popup-menu,
+.popup-menu-content,
+.candidate-popup-content {
+  color: {{FOREGROUND}};
+}
+
+.popup-menu-content,
+.candidate-popup-content {
+  background-color: {{SURFACE}};
+  border: 1px solid {{BORDER}};
+  border-radius: {{RADIUS_SURFACE}};
+  box-shadow: 0 6px 20px {{SHADOW}};
+}
+
+.popup-menu-item,
+.popup-sub-menu .popup-menu-item {
+  border-radius: {{RADIUS_CONTROL}};
+  color: {{FOREGROUND}};
+}
+
+.popup-menu-item:hover,
+.popup-sub-menu .popup-menu-item:hover {
+  background-color: {{HOVER}};
+}
+
+.popup-menu-item:active,
+.popup-sub-menu .popup-menu-item:active {
+  background-color: {{PRESSED}};
+}
+
+.popup-menu-item:checked,
+.popup-menu-item:selected,
+.popup-sub-menu .popup-menu-item:selected {
+  background-color: {{SELECTION}};
+  color: {{ACCENT_INK}};
+}
+
+.popup-menu-item:focus,
+.popup-sub-menu .popup-menu-item:focus {
+  box-shadow: inset 0 0 0 {{FOCUS_WIDTH}} {{FOCUS}} !important;
+}
+
+.popup-inactive-menu-item,
+.popup-inactive-menu-item:insensitive {
+  color: {{MUTED}};
+}
+
+.popup-menu-item:insensitive,
+.popup-sub-menu .popup-menu-item:insensitive {
+  color: {{DISABLED}};
+}
+
+.popup-sub-menu {
+  background-color: {{SUBTLE}};
+  border: 1px solid {{BORDER}};
+  border-radius: 0 0 {{RADIUS_CONTROL}} {{RADIUS_CONTROL}};
+}
+
+.popup-separator-menu-item .popup-separator-menu-item-separator,
+.popup-sub-menu .popup-separator-menu-item .popup-separator-menu-item-separator {
+  background-color: {{BORDER}};
+}
+
+.quick-settings {
+  padding: {{SPACE_4}};
+  border-radius: {{RADIUS_SURFACE}};
+}
+
+.quick-settings-grid {
+  spacing-rows: {{SPACE_2}};
+  spacing-columns: {{SPACE_2}};
+}
+
+.quick-toggle,
+.quick-toggle-has-menu,
+.quick-toggle-has-menu .quick-toggle:last-child {
+  border-radius: {{RADIUS_CONTROL}};
+}
+
+.quick-toggle-has-menu .quick-toggle:ltr {
+  border-radius: {{RADIUS_CONTROL}} 0 0 {{RADIUS_CONTROL}};
+}
+
+.quick-toggle-has-menu .quick-toggle:rtl {
+  border-radius: 0 {{RADIUS_CONTROL}} {{RADIUS_CONTROL}} 0;
+}
+
+.quick-toggle-has-menu .quick-toggle-menu-button:ltr {
+  border-radius: 0 {{RADIUS_CONTROL}} {{RADIUS_CONTROL}} 0;
+}
+
+.quick-toggle-has-menu .quick-toggle-menu-button:rtl {
+  border-radius: {{RADIUS_CONTROL}} 0 0 {{RADIUS_CONTROL}};
+}
+
+.quick-toggle,
+.quick-toggle-has-menu .quick-toggle-menu-button,
+.quick-settings .icon-button,
+.message-list-controls .button {
+  background-color: {{SUBTLE}};
+  color: {{FOREGROUND}};
+  box-shadow: inset 0 0 0 1px {{BORDER}};
+}
+
+.quick-toggle:hover,
+.quick-toggle-has-menu .quick-toggle-menu-button:hover,
+.quick-settings .icon-button:hover,
+.message-list-controls .button:hover {
+  background-color: {{HOVER}};
+}
+
+.quick-toggle:active,
+.quick-toggle-has-menu .quick-toggle-menu-button:active,
+.quick-settings .icon-button:active,
+.message-list-controls .button:active {
+  background-color: {{PRESSED}};
+}
+
+.quick-toggle:checked,
+.quick-toggle-has-menu .quick-toggle-menu-button:checked,
+.quick-toggle-menu .header .icon.active {
+  background-color: {{ACCENT}};
+  color: {{ON_ACCENT}};
+  box-shadow: inset 0 -2px 0 {{ACCENT_PRESSED}};
+}
+
+.quick-toggle:checked:hover,
+.quick-toggle-has-menu .quick-toggle-menu-button:checked:hover {
+  background-color: {{ACCENT_HOVER}};
+}
+
+.quick-toggle:checked:active,
+.quick-toggle-has-menu .quick-toggle-menu-button:checked:active {
+  background-color: {{ACCENT_PRESSED}};
+}
+
+.quick-toggle-has-menu .quick-toggle-separator {
+  background-color: {{RULE}};
+}
+
+.quick-toggle-has-menu:checked .quick-toggle-separator {
+  background-color: {{ON_ACCENT}};
+}
+
+.quick-toggle .quick-toggle-title {
+  font-weight: {{TYPE_WEIGHT}};
+}
+
+.quick-toggle .quick-toggle-subtitle,
+.quick-toggle-menu .header .subtitle {
+  font-size: {{TYPE_SMALL}};
+  font-weight: 400;
+}
+
+.quick-toggle,
+.quick-toggle-has-menu .quick-toggle-menu-button,
+.quick-settings .icon-button {
+  border-width: 0;
+}
+
+.quick-toggle:focus,
+.quick-toggle-has-menu .quick-toggle-menu-button:focus,
+.quick-settings .icon-button:focus,
+.quick-slider .slider-bin:focus,
+.message-list-controls .button:focus {
+  box-shadow: inset 0 0 0 {{FOCUS_WIDTH}} {{FOCUS}} !important;
+}
+
+.quick-toggle:checked:focus,
+.quick-toggle-has-menu .quick-toggle-menu-button:checked:focus {
+  box-shadow: inset 0 0 0 {{FOCUS_WIDTH}} {{ON_ACCENT}} !important;
+}
+
+.quick-toggle:insensitive,
+.quick-toggle-has-menu .quick-toggle-menu-button:insensitive {
+  background-color: {{SURFACE}};
+  color: {{DISABLED}};
+}
+
+.quick-settings .icon-button,
+.quick-slider .slider-bin,
+.message-list-controls .button {
+  border-radius: {{RADIUS_CONTROL}};
+}
+
+.quick-toggle-menu,
+.quick-toggle-menu:hover,
+.quick-toggle-menu:focus {
+  background-color: {{RAISED}};
+  border: 1px solid {{BORDER}};
+  border-radius: {{RADIUS_CONTROL}};
+  color: {{FOREGROUND}};
+}
+
+.quick-toggle-menu .header {
+  box-shadow: inset 0 -1px 0 {{BORDER}};
+}
+
+.quick-toggle-menu .header .icon {
+  border-radius: {{RADIUS_CONTROL}};
+  background-color: {{SELECTION}};
+  color: {{ACCENT_INK}};
+}
+
+.quick-toggle-menu .header .subtitle {
+  color: {{MUTED}};
+}
+
+.slider {
+  -barlevel-height: 5px;
+  -barlevel-background-color: {{CONTROL_BORDER}};
+  -barlevel-active-background-color: {{ACCENT}};
+  -barlevel-overdrive-color: {{ERROR}};
+  color: {{ACCENT_INK}};
+}
+
+.slider:hover {
+  color: {{FOREGROUND}};
+}
+
+.toggle-switch {
+  background-color: {{SUBTLE}};
+  box-shadow: inset 0 0 0 1px {{CONTROL_BORDER}};
+}
+
+.toggle-switch:hover {
+  background-color: {{HOVER}};
+}
+
+.toggle-switch .handle {
+  background-color: {{FOREGROUND}};
+}
+
+.toggle-switch:checked,
+.toggle-switch:checked:hover {
+  background-color: {{ACCENT}};
+  color: {{ON_ACCENT}};
+  box-shadow: none;
+}
+
+.toggle-switch:checked .handle {
+  background-color: {{ON_ACCENT}};
+}
+
+.check-box StIcon {
+  border-color: {{CONTROL_BORDER}};
+}
+
+.check-box:focus StBin {
+  box-shadow: inset 0 0 0 {{FOCUS_WIDTH}} {{FOCUS}};
+}
+
+.check-box:checked StIcon,
+.check-box:checked:hover StIcon {
+  background-color: {{ACCENT}};
+  color: {{ON_ACCENT}};
+}
+
+/* The date is the page title. Calendar and notification content carry the
+ * same small corner and rule as the Quick Settings controls. */
+#calendarArea {
+  padding: {{SPACE_2}};
+}
+
+.datemenu-today-button {
+  border-radius: {{RADIUS_CONTROL}};
+  color: {{FOREGROUND}};
+  box-shadow: inset 0 -1px 0 {{RULE}};
+}
+
+.datemenu-today-button:hover {
+  background-color: {{HOVER}};
+}
+
+.datemenu-today-button .day-label {
+  font-size: {{TYPE_SMALL}};
+  font-weight: {{TYPE_WEIGHT}};
+  color: {{ACCENT_INK}};
+}
+
+.datemenu-today-button .date-label {
+  font-size: {{TYPE_DISPLAY}};
+  font-weight: {{TYPE_HEADING_WEIGHT}};
+  color: {{FOREGROUND}};
+}
+
+.calendar .calendar-month-header .calendar-month-label {
+  font-weight: {{TYPE_WEIGHT}};
+  color: {{FOREGROUND}} !important;
+  background-color: transparent;
+}
+
+.calendar .calendar-day,
+.calendar .calendar-day-heading,
+.calendar .calendar-month-header .pager-button {
+  border-radius: {{RADIUS_SMALL}};
+  color: {{FOREGROUND}};
+  background-color: transparent;
+}
+
+.calendar .calendar-day,
+.calendar .calendar-day-heading,
+.calendar .calendar-week-number {
+  font-size: {{TYPE_SMALL}};
+}
+
+.calendar .calendar-day-heading {
+  color: {{MUTED}};
+  font-weight: {{TYPE_WEIGHT}};
+}
+
+.calendar .calendar-day.calendar-weekend,
+.calendar .calendar-day.calendar-other-month,
+.calendar .calendar-day.calendar-other-month.calendar-weekend {
+  color: {{MUTED}};
+}
+
+.calendar .calendar-day:hover,
+.calendar .calendar-month-header .pager-button:hover {
+  background-color: {{HOVER}};
+}
+
+.calendar .calendar-day:selected {
+  color: {{ACCENT_INK}};
+  background-color: {{SELECTION}};
+  box-shadow: inset 0 0 0 1px {{ACCENT}};
+}
+
+.calendar .calendar-day.calendar-today {
+  color: {{ON_ACCENT}} !important;
+  background-color: {{ACCENT}} !important;
+}
+
+/* The built-in event marker assumes white-on-accent in both variants. */
+.calendar .calendar-day.calendar-day-with-events {
+  background-image: none !important;
+  border-bottom: 2px solid {{ACCENT}};
+}
+
+.calendar .calendar-day.calendar-today.calendar-day-with-events {
+  border-bottom-color: {{ON_ACCENT}};
+}
+
+.calendar .calendar-day:focus,
+.calendar .calendar-month-header .pager-button:focus,
+.datemenu-today-button:focus {
+  box-shadow: inset 0 0 0 {{FOCUS_WIDTH}} {{FOCUS}} !important;
+}
+
+.calendar .calendar-day.calendar-today:focus {
+  box-shadow: inset 0 0 0 {{FOCUS_WIDTH}} {{ON_ACCENT}} !important;
+}
+
+.message-list {
+  border-color: {{BORDER}};
+}
+
+.message-list .message-list-placeholder,
+.message .message-header,
+.message .message-header .message-header-content .event-time,
+.events-button .events-box .event-time {
+  color: {{MUTED}};
+}
+
+.message-list .message-list-placeholder {
+  font-size: 1em;
+  font-weight: {{TYPE_WEIGHT}};
+}
+
+.message-list .message-list-placeholder > StIcon {
+  icon-size: 3em;
+}
+
+.message,
+.message-view .message,
+.events-button,
+.world-clocks-button,
+.weather-button {
+  color: {{FOREGROUND}};
+  background-color: {{RAISED}};
+  border: 1px solid {{BORDER}};
+  border-radius: {{RADIUS_CONTROL}};
+}
+
+.message:hover,
+.events-button:hover,
+.world-clocks-button:hover,
+.weather-button:hover {
+  background-color: {{HOVER}};
+}
+
+.message:second-in-stack {
+  background-color: {{SUBTLE}};
+}
+
+.message:lower-in-stack {
+  background-color: {{HEADER}};
+  border-color: {{BORDER}};
+}
+
+.message .message-header .message-close-button,
+.message .message-header .message-expand-button {
+  color: {{FOREGROUND}};
+  border-radius: {{RADIUS_SMALL}};
+}
+
+.notification-banner,
+.notification-banner .message {
+  background-color: {{RAISED}};
+  color: {{FOREGROUND}};
+  border-radius: {{RADIUS_SURFACE}};
+}
+
+.notification-banner .message {
+  box-shadow: inset 0 -2px 0 {{ACCENT}};
+}
+
+.notification-banner {
+  box-shadow: 0 6px 18px {{SHADOW}};
+}
+
+.modal-dialog {
+  color: {{FOREGROUND}};
+  background-color: {{SURFACE}};
+  border: 1px solid {{BORDER}};
+  border-radius: {{RADIUS_SURFACE}};
+  box-shadow: 0 10px 24px {{SHADOW}};
+}
+
+.modal-dialog .message-dialog-title {
+  font-size: {{TYPE_TITLE}};
+  font-weight: {{TYPE_HEADING_WEIGHT}};
+}
+
+.modal-dialog .modal-dialog-button {
+  color: {{FOREGROUND}};
+  background-color: {{SUBTLE}};
+  border-radius: {{RADIUS_CONTROL}};
+}
+
+.modal-dialog .modal-dialog-button:hover {
+  background-color: {{HOVER}};
+}
+
+.modal-dialog .modal-dialog-button:active {
+  background-color: {{PRESSED}};
+}
+
+.modal-dialog .modal-dialog-button.default {
+  color: {{ON_ACCENT}};
+  background-color: {{ACCENT}};
+}
+
+.modal-dialog .modal-dialog-button.default:hover {
+  background-color: {{ACCENT_HOVER}};
+}
+
+.modal-dialog .modal-dialog-button.default:active {
+  background-color: {{ACCENT_PRESSED}};
+}
+
+.modal-dialog .modal-dialog-button:focus {
+  box-shadow: inset 0 0 0 {{FOCUS_WIDTH}} {{FOCUS}} !important;
+}
+
+.modal-dialog .modal-dialog-button.default:focus {
+  box-shadow: inset 0 0 0 {{FOCUS_WIDTH}} {{ON_ACCENT}} !important;
+}
+
+.osd-window,
+.osd-monitor-label,
+.workspace-switcher,
+.switcher-list {
+  color: {{FOREGROUND}};
+  background-color: {{RAISED}};
+  border: 1px solid {{BORDER}};
+  border-radius: {{RADIUS_SURFACE}};
+  box-shadow: 0 5px 16px {{SHADOW}};
+}
+
+.osd-window .level {
+  -barlevel-background-color: {{CONTROL_BORDER}};
+  -barlevel-active-background-color: {{ACCENT}};
+  -barlevel-overdrive-color: {{ERROR}};
+}
+
+.workspace-switcher .ws-switcher-indicator {
+  background-color: {{CONTROL_BORDER}};
+}
+
+.workspace-switcher .ws-switcher-indicator:active {
+  background-color: {{ACCENT}};
+}
+
+.switcher-list .item-box,
+.switcher-list .item-box:selected,
+.switcher-list .item-box:outlined {
+  color: {{FOREGROUND}};
+  border-radius: {{RADIUS_CONTROL}};
+}
+
+.switcher-list .item-box:selected {
+  background-color: {{SELECTION}};
+  box-shadow: inset 0 -2px 0 {{ACCENT}};
+}
+
+.switcher-list .item-box:outlined {
+  border-color: {{FOCUS}};
+}
+
+/* Overview uses the same palette in daylight and at night. Maintain the
+ * Shell's internal measurements for grid, dash, and workspace animations. */
+#overviewGroup {
+  background-color: {{OVERVIEW}};
+}
+
+.workspace-background {
+  border-radius: {{RADIUS_SURFACE}};
+  box-shadow: 0 5px 18px {{SHADOW}};
+}
+
+.workspace-thumbnails .workspace-thumbnail {
+  background-color: {{SUBTLE}};
+  border-color: {{BORDER}};
+  border-radius: {{RADIUS_SMALL}};
+}
+
+.workspace-thumbnail-indicator {
+  border-color: {{ACCENT}};
+  border-radius: {{RADIUS_CONTROL}};
+}
+
+.search-entry,
+.search-entry:hover,
+.search-entry:focus {
+  background-color: {{RAISED}};
+  color: {{FOREGROUND}};
+  border: 1px solid {{CONTROL_BORDER}};
+  border-radius: {{RADIUS_CONTROL}};
+}
+
+.search-entry StLabel.hint-text,
+.search-entry .search-entry-icon,
+.search-entry:focus .search-entry-icon {
+  color: {{MUTED}};
+}
+
+.search-entry:focus {
+  border-color: {{FOCUS}};
+  box-shadow: inset 0 0 0 1px {{FOCUS}} !important;
+}
+
+.search-entry StText {
+  selected-color: {{ON_ACCENT}};
+  selection-background-color: {{ACCENT}};
+}
+
+.search-section-content,
+.app-folder-dialog {
+  color: {{FOREGROUND}};
+  background-color: {{SURFACE}};
+  border: 1px solid {{BORDER}};
+  border-radius: {{RADIUS_SURFACE}};
+}
+
+.search-statustext,
+.list-search-result .list-search-result-description,
+.search-provider-icon .list-search-provider-content .list-search-provider-details {
+  color: {{MUTED}};
+}
+
+.search-statustext {
+  font-weight: {{TYPE_WEIGHT}};
+  font-size: {{TYPE_TITLE}};
+}
+
+.overview-tile,
+.grid-search-result,
+.list-search-result,
+.search-provider-icon,
+.app-folder {
+  color: {{FOREGROUND}};
+  border-radius: {{RADIUS_CONTROL}};
+  background-color: transparent;
+}
+
+.overview-tile:hover,
+.grid-search-result:hover,
+.list-search-result:hover,
+.search-provider-icon:hover,
+.app-folder:hover {
+  color: {{FOREGROUND}};
+  background-color: {{HOVER}};
+}
+
+.overview-tile:active,
+.grid-search-result:active,
+.list-search-result:active,
+.search-provider-icon:active,
+.app-folder:active {
+  color: {{FOREGROUND}};
+  background-color: {{PRESSED}};
+}
+
+.overview-tile:selected,
+.overview-tile:highlighted,
+.grid-search-result:selected,
+.grid-search-result:highlighted,
+.list-search-result:selected,
+.list-search-result:highlighted,
+.search-provider-icon:selected {
+  color: {{FOREGROUND}};
+  background-color: {{SELECTION}};
+  box-shadow: inset 0 -2px 0 {{ACCENT}};
+}
+
+.overview-tile:focus,
+.grid-search-result:focus,
+.list-search-result:focus,
+.search-provider-icon:focus,
+.app-folder:focus {
+  box-shadow: inset 0 0 0 {{FOCUS_WIDTH}} {{FOCUS}} !important;
+}
+
+.app-folder-dialog .folder-name-container .folder-name-label,
+.app-folder-dialog .folder-name-container .folder-name-entry {
+  color: {{FOREGROUND}};
+  font-size: {{TYPE_TITLE}};
+  font-weight: {{TYPE_HEADING_WEIGHT}};
+}
+
+.overview-tile .app-grid-running-dot,
+.grid-search-result .app-grid-running-dot {
+  background-color: {{ACCENT}};
+}
+
+#overviewGroup .page-indicator .page-indicator-icon {
+  background-color: {{ACCENT}};
+}
+
+#dash .dash-background {
+  background-color: {{SURFACE}};
+  border: 1px solid {{BORDER}};
+  border-radius: {{RADIUS_SURFACE}};
+  box-shadow: 0 5px 16px {{SHADOW}};
+}
+
+#dash .dash-item-container .show-apps .overview-icon,
+#dash .dash-item-container .overview-tile .overview-icon,
+#dash .dash-item-container .grid-search-result .overview-icon {
+  color: {{FOREGROUND}};
+  background-color: {{SURFACE}};
+  border-radius: {{RADIUS_CONTROL}};
+}
+
+#dash .dash-item-container .show-apps:hover .overview-icon,
+#dash .dash-item-container .overview-tile:hover .overview-icon,
+#dash .dash-item-container .grid-search-result:hover .overview-icon {
+  background-color: {{HOVER}};
+}
+
+#dash .dash-item-container .show-apps:checked .overview-icon,
+#dash .dash-item-container .overview-tile:active .overview-icon,
+#dash .dash-item-container .grid-search-result:active .overview-icon {
+  background-color: {{SELECTION}};
+}
+
+#dash .dash-item-container .show-apps:focus .overview-icon,
+#dash .dash-item-container .overview-tile:focus .overview-icon,
+#dash .dash-item-container .grid-search-result:focus .overview-icon {
+  box-shadow: inset 0 0 0 {{FOCUS_WIDTH}} {{FOCUS}} !important;
+}
+
+.dash-label,
+.window-caption,
+.screenshot-ui-tooltip {
+  color: {{FOREGROUND}};
+  background-color: {{RAISED}};
+  border: 1px solid {{BORDER}};
+  border-radius: {{RADIUS_SMALL}};
+  box-shadow: 0 3px 9px {{SHADOW}};
+}
+
+.window-close,
+.window-close:hover {
+  background-color: {{RAISED}};
+  color: {{FOREGROUND}};
+  border: 1px solid {{CONTROL_BORDER}};
+  border-radius: {{RADIUS_CONTROL}};
+}
+
+.window-close:hover {
+  background-color: {{HOVER}};
+}
+
+StScrollBar > .vhandle,
+StScrollBar > .hhandle {
+  background-color: {{CONTROL_BORDER}};
+}
+
+StScrollBar > .vhandle:hover,
+StScrollBar > .hhandle:hover {
+  background-color: {{FOREGROUND}};
+}

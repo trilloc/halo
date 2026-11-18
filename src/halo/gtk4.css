@@ -1,0 +1,63 @@
+/* Halo for plain GTK 4: flat header bars, a tinted sidebar and rounded selections.
+ * The toolkit continues to select its own high-contrast stylesheet. */
+@media (not (prefers-contrast: more)) {
+  headerbar:not(.flat), .titlebar:not(headerbar):not(.flat),
+  headerbar:not(.flat):backdrop, .titlebar:not(headerbar):not(.flat):backdrop {
+    background-color: {{HEADER}};
+    background-image: none;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  headerbar:backdrop .title { color: {{MUTED}}; }
+
+  window.csd:not(.maximized):not(.tiled):not(.fullscreen) { border-radius: {{RADIUS_WINDOW}}; }
+
+  button:not(.flat):not(.circular) { border-radius: 10px; }
+  button:not(.flat):not(.suggested-action):not(.destructive-action):not(:checked):not(:disabled) {
+    background-color: {{APP_FILL}};
+    border-color: transparent;
+  }
+  button:not(.flat):not(.suggested-action):not(.destructive-action):not(:checked):not(:disabled):hover {
+    background-color: {{APP_FILL_HOVER}};
+  }
+  button:not(.flat):not(.suggested-action):not(.destructive-action):not(:checked):not(:disabled):active {
+    background-color: {{APP_FILL_PRESSED}};
+  }
+
+  entry:not(.flat), spinbutton:not(.vertical) {
+    background-color: {{APP_FILL}};
+    border-color: transparent;
+  }
+  entry:not(.flat):focus-within, spinbutton:not(.vertical):focus-within {
+    border-color: {{FOCUS}};
+    box-shadow: inset 0 0 0 1px {{FOCUS}};
+  }
+
+  .sidebar, list.sidebar, list.navigation-sidebar { background-color: {{SUBTLE}}; }
+  .navigation-sidebar > row { border-radius: {{RADIUS_CONTROL}}; margin: 1px 6px; }
+  .navigation-sidebar > row:selected, .navigation-sidebar > row:selected:hover,
+  .navigation-sidebar > row:selected:backdrop {
+    color: {{ACCENT_INK}};
+    background-color: {{SELECTION}};
+    box-shadow: none;
+  }
+
+  list > row:selected, listview > row:selected, gridview > child:selected {
+    color: {{FOREGROUND}};
+    background-color: {{SELECTION}};
+  }
+  gridview > child { border-radius: 14px; }
+
+  popover > contents { border-radius: 16px; }
+
+  notebook > header { background-color: {{HEADER}}; border-color: {{BORDER}}; }
+  notebook > header > tabs > tab { border-radius: {{RADIUS_CONTROL}}; }
+  notebook > header.top > tabs > tab:checked, notebook > header.bottom > tabs > tab:checked,
+  notebook > header.left > tabs > tab:checked, notebook > header.right > tabs > tab:checked {
+    color: {{ACCENT_INK}};
+    background-color: {{SELECTION}};
+    border-color: transparent;
+    box-shadow: none;
+  }
+}

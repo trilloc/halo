@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="front" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="{{FOLDER_TOP}}"/>
+      <stop offset="1" stop-color="{{FOLDER_BOT}}"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path d="M6 13a4 4 0 0 1 4-4h13.2a4 4 0 0 1 2.9 1.2l3.4 3.6a4 4 0 0 0 2.9 1.2H54a4 4 0 0 1 4 4v4H6z" fill="{{FOLDER_BACK}}"/>
+  <rect x="6" y="19" width="52" height="37" rx="6" fill="url(#front)"/>
+  <rect x="6" y="19" width="52" height="14" rx="6" fill="url(#sheen)"/>
+  <rect x="6.5" y="19.5" width="51" height="1" rx="0.5" fill="#ffffff" opacity="0.45"/></svg>

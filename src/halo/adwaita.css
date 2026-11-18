@@ -1,0 +1,143 @@
+/* Halo for libadwaita: one continuous plane from header to content, a tinted
+ * sidebar, filled controls without outlines, and rounded selections. */
+@media (prefers-color-scheme: {{VARIANT}}) and (not (prefers-contrast: more)) {
+  :root {
+    --success-fg-color: {{ON_SUCCESS}};
+    --warning-fg-color: {{ON_WARNING}};
+    --headerbar-border-color: transparent;
+    --headerbar-shade-color: transparent;
+    --headerbar-darker-shade-color: {{BORDER}};
+    --sidebar-bg-color: {{SUBTLE}};
+    --sidebar-backdrop-color: {{SUBTLE}};
+    --sidebar-border-color: transparent;
+    --sidebar-shade-color: transparent;
+    --secondary-sidebar-bg-color: {{BACKGROUND}};
+    --secondary-sidebar-backdrop-color: {{BACKGROUND}};
+    --secondary-sidebar-border-color: transparent;
+    --view-bg-color: {{SURFACE}};
+    --popover-bg-color: {{RAISED}};
+    --dialog-bg-color: {{RAISED}};
+    --card-bg-color: {{RAISED}};
+    --card-shade-color: {{BORDER}};
+    --window-radius: {{RADIUS_WINDOW}};
+    --border-radius: 10px;
+  }
+
+  /* Header bars carry no rule; the content begins where the bar ends. */
+  headerbar:not(.flat):not(.raised),
+  headerbar:not(.flat):not(.raised):backdrop {
+    background-image: none;
+    box-shadow: none;
+  }
+
+  headerbar.raised,
+  .top-bar.raised headerbar,
+  .toolbar-view-top-bar.raised {
+    box-shadow: 0 1px {{BORDER}};
+  }
+
+  headerbar .title { font-weight: {{TYPE_WEIGHT}}; }
+  headerbar .subtitle, headerbar:backdrop .title { color: {{MUTED}}; opacity: 1; }
+
+  .sidebar-pane,
+  .sidebar-pane headerbar:not(.flat),
+  .sidebar-pane headerbar:not(.flat):backdrop {
+    background-color: {{SUBTLE}};
+    background-image: none;
+    box-shadow: none;
+  }
+
+  /* Sidebar rows: a soft accent pill, no edge bar. */
+  .navigation-sidebar row:not(:disabled) { border-radius: {{RADIUS_CONTROL}}; margin: 1px 6px; }
+  .navigation-sidebar row:selected,
+  .navigation-sidebar row:selected:hover,
+  .navigation-sidebar row:selected:backdrop {
+    color: {{ACCENT_INK}};
+    background-color: {{SELECTION}};
+    box-shadow: none;
+    font-weight: {{TYPE_WEIGHT}};
+  }
+  .navigation-sidebar row:selected image { color: {{ACCENT_INK}}; }
+  .navigation-sidebar row:selected:dir(rtl) { box-shadow: none; }
+
+  /* Files: path bar as a quiet pill; grid and list selections in accent tint. */
+  .nautilus-pathbar {
+    background-color: {{APP_FILL}};
+    border-radius: {{RADIUS_CONTROL}};
+    box-shadow: none;
+  }
+  .nautilus-pathbar > scrolledwindow .dim-label:not(:disabled) { color: {{MUTED}}; }
+
+  gridview > child, .nautilus-grid-view gridview > child { border-radius: 14px; }
+  gridview > child:selected,
+  listview > row:selected,
+  columnview > listview > row:selected {
+    color: {{FOREGROUND}};
+    background-color: color-mix(in srgb, {{ACCENT}} 16%, transparent);
+  }
+  gridview > child:selected:hover,
+  listview > row:selected:hover {
+    background-color: color-mix(in srgb, {{ACCENT}} 22%, transparent);
+  }
+
+  /* Buttons are filled planes; only actions carry colour. */
+  button:not(.flat):not(.suggested-action):not(.destructive-action):not(.opaque):not(.pill):not(:checked) {
+    background-color: {{APP_FILL}};
+    box-shadow: none;
+  }
+  button:not(.flat):not(.suggested-action):not(.destructive-action):not(.opaque):not(:checked):hover {
+    background-color: {{APP_FILL_HOVER}};
+  }
+  button:not(.flat):not(.suggested-action):not(.destructive-action):not(.opaque):not(:checked):active {
+    background-color: {{APP_FILL_PRESSED}};
+  }
+  button.pill { border-radius: 999px; }
+
+  windowcontrols > button > image {
+    background-color: {{APP_FILL}};
+    border-radius: 999px;
+  }
+  windowcontrols > button:hover > image { background-color: {{APP_FILL_HOVER}}; }
+  windowcontrols > button:active > image { background-color: {{APP_FILL_PRESSED}}; }
+
+  entry:not(.flat), spinbutton:not(.flat), .search-entry, searchbar entry {
+    background-color: {{APP_FILL}};
+    box-shadow: none;
+    border-radius: {{RADIUS_CONTROL}};
+  }
+  entry:not(.flat):focus-within {
+    outline: 2px solid {{FOCUS}};
+    outline-offset: -2px;
+  }
+
+  /* Folio outlines unchecked controls; Halo leaves them as filled shapes. */
+  checkbutton > check:not(:checked):not(:indeterminate):not(:disabled),
+  checkbutton > radio:not(:checked):not(:indeterminate):not(:disabled) {
+    box-shadow: inset 0 0 0 1.5px {{CONTROL_BORDER}};
+  }
+  switch:not(:checked):not(:disabled),
+  entry:not(.flat):not(:disabled):not(:focus-within) {
+    box-shadow: none;
+  }
+
+  popover.background > contents,
+  popover.menu > contents {
+    border-radius: 16px;
+    box-shadow: 0 0 0 1px {{BORDER}}, 0 10px 30px {{SHADOW}};
+  }
+  popover.menu modelbutton { border-radius: 10px; }
+
+  .card, list.boxed-list, .boxed-list-separate > row {
+    border-radius: 16px;
+  }
+
+  window.csd:not(.maximized):not(.tiled):not(.tiled-top):not(.tiled-bottom):not(.tiled-left):not(.tiled-right):not(.fullscreen) {
+    border-radius: {{RADIUS_WINDOW}};
+  }
+
+  tabbar tabbox > tabboxchild, tabbar tabbox tab { border-radius: {{RADIUS_CONTROL}}; }
+  tabbar tab:selected { background-color: {{APP_FILL_PRESSED}}; }
+
+  scale > trough > highlight, progressbar > trough > progress { background-color: {{ACCENT}}; }
+  scale > trough > slider { background-color: {{SLIDER_HANDLE}}; box-shadow: 0 0 0 1px {{HANDLE_EDGE}}, 0 2px 4px {{HANDLE_EDGE}}; }
+}

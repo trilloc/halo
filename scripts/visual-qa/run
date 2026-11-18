@@ -1,0 +1,342 @@
+#!/usr/bin/env bash
+# Capture a theme with the real GNOME compositor inside a disposable session.
+set -euo pipefail
+
+qa_source=$(cd -- "$(dirname -- "$0")" && pwd)
+qa_project=$(cd -- "$qa_source/../.." && pwd)
+if [[ $# -lt 1 || $# -gt 3 ]] || [[ ! ${2:-all} =~ ^(all|light|dark)$ ]] ||
+    [[ ! ${3:-halo} =~ ^(halo)$ ]]; then
+    printf 'Usage: %s OUTPUT_DIRECTORY [all|light|dark] [halo]\n' "$0" >&2
+    exit 2
+fi
+qa_output=$(realpath -m -- "$1")
+qa_runs=${2:-all}
+qa_family=${3:-halo}
+
+if [[ ! -v GNOME_VISUAL_QA_DIR ]]; then
+    # Halo is captured with the Blur my Shell build installed for this user, if any.
+    export GNOME_VISUAL_QA_BLUR="${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/blur-my-shell@aunetx"
+    qa_temp=$(mktemp -d "/tmp/$qa_family-qa.XXXXXX")
+    cleanup() {
+        if mountpoint -q "$qa_temp/runtime/doc"; then
+            fusermount3 -u "$qa_temp/runtime/doc" 2>/dev/null || true
+        fi
+        rm -rf -- "$qa_temp" 2>/dev/null || true
+    }
+    trap cleanup EXIT
+    mkdir -m 700 "$qa_temp"/{home,runtime,config,data,cache,state}
+    export GNOME_VISUAL_QA_DIR="$qa_temp" HOME="$qa_temp/home"
+    export XDG_RUNTIME_DIR="$qa_temp/runtime" XDG_CONFIG_HOME="$qa_temp/config"
+    export XDG_DATA_HOME="$qa_temp/data" XDG_CACHE_HOME="$qa_temp/cache"
+    export XDG_STATE_HOME="$qa_temp/state"
+    export XDG_CONFIG_DIRS=/etc/xdg XDG_DATA_DIRS=/usr/share/ubuntu:/usr/share/gnome:/usr/local/share:/usr/share
+    unset DISPLAY WAYLAND_DISPLAY DBUS_SESSION_BUS_ADDRESS XAUTHORITY GNOME_SETUP_DISPLAY
+    unset XDG_SESSION_ID SESSION_MANAGER GTK_THEME GTK_PATH GDK_BACKEND PULSE_SERVER GNUPGHOME
+    export XDG_CURRENT_DESKTOP=ubuntu:GNOME XDG_SESSION_TYPE=wayland
+    export WAYLAND_DISPLAY=theme-qa-wayland LIBGL_ALWAYS_SOFTWARE=1
+    dbus-run-session -- "$0" "$qa_output" "$qa_runs" "$qa_family"
+    exit
+fi
+
+qa_temp=$GNOME_VISUAL_QA_DIR
+if [[ ${XDG_RUNTIME_DIR:-} != "$qa_temp/runtime" || $HOME != "$qa_temp/home" ||
+    ${WAYLAND_DISPLAY:-} != theme-qa-wayland || ! -v DBUS_SESSION_BUS_ADDRESS ]]; then
+    printf 'Use this runner with its automatically initialized private session.\n' >&2
+    exit 2
+fi
+qa_theme=("$qa_project/scripts/theme")
+if [[ $qa_family != folio ]]; then
+    qa_theme+=(--family "$qa_family")
+fi
+if [[ $qa_family == halo && -f ${GNOME_VISUAL_QA_BLUR:-}/metadata.json ]]; then
+    mkdir -p "$XDG_DATA_HOME/gnome-shell/extensions"
+    cp -r "$GNOME_VISUAL_QA_BLUR" "$XDG_DATA_HOME/gnome-shell/extensions/"
+fi
+if [[ $qa_family == halo ]]; then
+    # The Shell only loads extensions it finds at startup, as after a fresh login.
+    mkdir -p "$XDG_DATA_HOME/gnome-shell/extensions"
+    cp -r "$qa_project/build/halo/extension/halo-glass@gnobramanium" "$XDG_DATA_HOME/gnome-shell/extensions/"
+    touch "$XDG_DATA_HOME/gnome-shell/extensions/halo-glass@gnobramanium/.halo-install"
+fi
+mkdir -p "$HOME/Desktop" "$qa_output" "$XDG_DATA_HOME/gnome-shell/extensions/visual-qa@local" "$XDG_CONFIG_HOME/gtk-4.0"
+cp "$qa_source"/{metadata.json,extension.js} "$XDG_DATA_HOME/gnome-shell/extensions/visual-qa@local"
+qa_startup_css="$XDG_CONFIG_HOME/gtk-4.0/gtk.css"
+printf '/* Existing test user stylesheet. */\n' > "$qa_startup_css"
+cp "$qa_startup_css" "$qa_temp/original.css"
+
+gsettings set org.gnome.shell disabled-extensions "['ding@rastersoft.com']"
+
+pids=()
+apps=()
+cleanup_services() {
+    kill "${apps[@]}" "${pids[@]}" 2>/dev/null || true
+    wait 2>/dev/null || true
+    cp "$qa_temp/shell.log" "$qa_output/gnome-shell.log"
+    cp "$qa_temp/apps.log" "$qa_output/apps.log"
+}
+trap cleanup_services EXIT
+
+if [[ $qa_family == meridian ]]; then
+    # Exercise the real Shell volume control with a silent test-only audio node.
+    mkdir -p "$XDG_CONFIG_HOME/pipewire/pipewire.conf.d"
+    cat > "$XDG_CONFIG_HOME/pipewire/pipewire.conf.d/visual-qa.conf" <<'AUDIO'
+context.objects = [
+  { factory = adapter
+    args = {
+      factory.name = support.null-audio-sink
+      node.name = visual-qa-output
+      node.description = "Studio speakers"
+      media.class = "Audio/Sink"
+      audio.position = "FL,FR"
+    }
+  }
+  { factory = metadata
+    args = {
+      metadata.name = default
+      metadata.values = [
+        { key = default.audio.sink value = { name = visual-qa-output } }
+      ]
+    }
+  }
+]
+AUDIO
+fi
+pipewire > "$qa_temp/pipewire.log" 2>&1 &
+pids+=("$!")
+pipewire-pulse > "$qa_temp/pipewire-pulse.log" 2>&1 &
+pids+=("$!")
+export PULSE_SERVER="unix:$XDG_RUNTIME_DIR/pulse/native"
+gnome-shell --mode=ubuntu --wayland --headless --no-x11 --virtual-monitor 2560x1600 \
+    --wayland-display "$WAYLAND_DISPLAY" > "$qa_temp/shell.log" 2>&1 &
+pids+=("$!")
+: > "$qa_temp/apps.log"
+
+for ((i=0; i<80; i++)); do
+    if [[ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]] && grep -q 'GNOME Shell started' "$qa_temp/shell.log"; then break; fi
+    sleep 0.2
+done
+grep -q 'GNOME Shell started' "$qa_temp/shell.log"
+gnome-extensions enable visual-qa@local
+sleep 1
+gnome-extensions info visual-qa@local | grep -F 'State: ACTIVE'
+gsettings set org.gnome.desktop.search-providers disable-external true
+gsettings set org.gnome.Ptyxis interface-style 'system'
+gsettings set org.gnome.desktop.interface font-name 'Inter 11'
+gsettings set org.gnome.desktop.interface monospace-font-name 'JetBrains Mono 11'
+gsettings set org.gnome.desktop.interface color-scheme 'default'
+gsettings set org.gnome.shell favorite-apps "['org.gnome.Nautilus.desktop','org.gnome.TextEditor.desktop','org.gnome.Ptyxis.desktop','org.gnome.Settings.desktop']"
+gsettings set org.gnome.desktop.interface gtk-theme 'Yaru-blue'
+gsettings set org.gnome.desktop.interface accent-color 'blue'
+gsettings set org.gnome.desktop.wm.preferences button-layout ':minimize,maximize,close'
+gsettings set org.gnome.nautilus.preferences default-folder-viewer 'list-view'
+
+snapshot() {
+    for key in /org/gnome/desktop/interface/{gtk-theme,accent-color,color-scheme} \
+        /org/gnome/desktop/background/{picture-uri,picture-uri-dark,picture-options} \
+        /org/gnome/shell/extensions/user-theme/name \
+        /org/gnome/shell/{enabled-extensions,disabled-extensions}; do
+        printf '%s %s\n' "$key" "$(dconf read "$key")"
+    done
+}
+snapshot > "$qa_temp/preferences.before"
+
+start_app() {
+    "$@" >> "$qa_temp/apps.log" 2>&1 &
+    apps+=("$!")
+}
+
+stop_apps() {
+    if (( ${#apps[@]} )); then
+        kill "${apps[@]}" 2>/dev/null || true
+        wait "${apps[@]}" 2>/dev/null || true
+        apps=()
+    fi
+}
+
+capture() {
+    local scene=$1
+    local destination=$2
+    rm -f "$qa_temp/$scene.png" "$qa_temp/$scene.error"
+    printf '%s\n' "$scene" > "$qa_temp/scene.in"
+    mv -f "$qa_temp/scene.in" "$qa_temp/scene"
+    for ((i=0; i<65; i++)); do
+        if [[ -f "$qa_temp/$scene.error" ]]; then
+            cat "$qa_temp/$scene.error" >&2
+            return 1
+        fi
+        if [[ -f "$qa_temp/$scene.png" ]]; then
+            cp "$qa_temp/$scene.png" "$destination"
+            printf 'Captured %s\n' "$destination"
+            return
+        fi
+        sleep 0.2
+    done
+    return 1
+}
+
+qa_fixture="$HOME/Workshop"
+mkdir -p "$qa_fixture"/{Archive,Materials,Prints,Reference}
+cat > "$qa_fixture/Field Notes.txt" <<'FIXTURE'
+WORKSHOP / FIELD NOTES
+
+Record 04
+Publication proof
+
+The first proof came back with a clean impression and
+good shadow detail. Keep the finer stock for the folded
+insert, and retain the wide margin on the opening page.
+
+The workshop copy is in Reference. Compare under
+daylight before sending the second set.
+FIXTURE
+for name in 'Letterpress proof' 'Production schedule' 'Reading room finish samples' \
+    'Reference index' 'Type specimens' 'Window hardware'; do
+    printf '%s\n' "$name" > "$qa_fixture/$name.txt"
+done
+cat > "$qa_temp/terminal" <<'TERMINAL'
+#!/usr/bin/env bash
+printf '\e[1m%s\e[0m\n\n' 'Workshop / proof register'
+printf '%s\n' '$ ls -1 Reference' '01-type-specimen' '02-paper-sample' '03-print-annotations'
+printf '\n%s\n' '$ wc -l "Field Notes.txt"' '12 Field Notes.txt'
+printf '\n%s' 'workshop $ '
+exec /usr/bin/sleep infinity
+TERMINAL
+chmod +x "$qa_temp/terminal"
+# Ptyxis falls back to direct spawning when systemd-run is absent. This private
+# Wayland session has its own bus and does not use the real user manager.
+mkdir -p "$qa_temp/terminal-path"
+for prog in bash env sleep getent cut; do
+    ln -s "$(command -v "$prog")" "$qa_temp/terminal-path/$prog"
+done
+
+capture_toolkits() {
+    local destination=$1
+    local variant=$2
+    start_app seahorse
+    sleep 2
+    capture seahorse "$destination/seahorse.png" || true
+    stop_apps
+
+    start_app /usr/bin/python3 "$qa_source/widgets.py" 3.0
+    sleep 1
+    capture gtk3-states "$destination/gtk3-states.png"
+    gsettings set org.gnome.desktop.interface text-scaling-factor 1.35
+    capture gtk3-large-text "$destination/gtk3-large-text.png"
+    gsettings reset org.gnome.desktop.interface text-scaling-factor
+    stop_apps
+
+    start_app /usr/bin/python3 "$qa_source/widgets.py" 3.0 empty
+    sleep 1
+    capture gtk3-states "$destination/gtk3-empty.png"
+    stop_apps
+
+    start_app /usr/bin/python3 "$qa_source/widgets.py" 4.0
+    sleep 1
+    capture gtk4-states "$destination/gtk4-states.png"
+    stop_apps
+
+    "${qa_theme[@]}" apply "$variant" --no-adwaita
+    start_app /usr/bin/python3 "$qa_source/widgets.py" 4.0
+    sleep 1
+    capture gtk4-states "$destination/gtk4-named-theme.png"
+    stop_apps
+}
+
+"${qa_theme[@]}" install
+for variant in light dark; do
+    if [[ "$qa_runs" != all && "$qa_runs" != "$variant" ]]; then continue; fi
+    qa_variant="$qa_output/$variant"
+    mkdir -p "$qa_variant"
+    "${qa_theme[@]}" apply "$variant" --wallpaper --adwaita
+    sleep 1
+    gnome-extensions info user-theme@gnome-shell-extensions.gcampax.github.com | grep -F 'State: ACTIVE'
+    if [[ $qa_family != folio ]]; then
+        /usr/bin/python3 "$qa_source/scale.py" 1.6667
+    else
+        /usr/bin/python3 "$qa_source/scale.py" 1.3333
+    fi
+    start_app gnome-text-editor -s "$qa_fixture/Field Notes.txt"
+    start_app env PATH="$qa_temp/terminal-path" /usr/bin/ptyxis --standalone --title 'Studio terminal' --working-directory "$qa_fixture" -- "$qa_temp/terminal"
+    start_app nautilus --new-window "$qa_fixture"
+    sleep 2.5
+    capture desktop "$qa_variant/desktop.png"
+    if [[ $qa_family == folio ]]; then
+        /usr/bin/python3 "$qa_source/scale.py" 1.6667
+        capture quick-settings "$qa_variant/quick-settings-167.png"
+        /usr/bin/python3 "$qa_source/scale.py" 1.3333
+    fi
+    capture quick-settings "$qa_variant/quick-settings.png"
+    original_options=$(dconf read /org/gnome/desktop/background/picture-options)
+    gsettings set org.gnome.desktop.background picture-options 'none'
+    case "$qa_family-$variant" in
+        folio-light) plain='#eee6d8' ;;
+        folio-dark) plain='#26332c' ;;
+        meridian-light) plain='#e7e7e3' ;;
+        meridian-dark) plain='#202028' ;;
+        halo-light) plain='#e9edf8' ;;
+        halo-dark) plain='#0c0d14' ;;
+    esac
+    gsettings set org.gnome.desktop.background primary-color "$plain"
+    gsettings set org.gnome.desktop.background secondary-color "$plain"
+    capture desktop-plain "$qa_variant/desktop-plain.png"
+    if [[ $qa_family != folio ]]; then
+        capture quick-settings "$qa_variant/quick-settings-plain.png"
+    fi
+    if [[ -n $original_options ]]; then
+        dconf write /org/gnome/desktop/background/picture-options "$original_options"
+    else
+        dconf reset /org/gnome/desktop/background/picture-options
+    fi
+    capture quick-settings-expanded "$qa_variant/quick-settings-expanded.png" || true
+    if [[ $qa_family != folio ]]; then
+        gsettings set org.gnome.desktop.interface text-scaling-factor 1.35
+        capture quick-settings "$qa_variant/quick-settings-large-text.png"
+        gsettings reset org.gnome.desktop.interface text-scaling-factor
+    fi
+    capture calendar-empty "$qa_variant/calendar-empty.png"
+    if [[ $qa_family == folio ]]; then
+        capture shell-dialog "$qa_variant/shell-dialog.png"
+    fi
+    capture notification "$qa_variant/notification.png"
+    capture calendar "$qa_variant/calendar.png"
+    if [[ $qa_family == folio ]]; then
+        capture volume "$qa_variant/volume.png"
+        capture brightness "$qa_variant/brightness.png"
+    fi
+    capture overview "$qa_variant/overview.png"
+    capture search "$qa_variant/search.png"
+    capture application-grid "$qa_variant/application-grid.png"
+
+    start_app gnome-control-center background
+    sleep 2
+    capture settings "$qa_variant/settings.png"
+    stop_apps
+
+    if [[ $qa_family == folio ]]; then
+        capture_toolkits "$qa_variant" "$variant"
+    fi
+
+    /usr/bin/python3 "$qa_source/scale.py" 1.0
+    capture quick-settings "$qa_variant/quick-settings-100.png"
+    /usr/bin/python3 "$qa_source/scale.py" 2.0
+    capture application-grid "$qa_variant/application-grid-200.png"
+    capture quick-settings "$qa_variant/quick-settings-200.png"
+
+    if [[ $variant == light ]]; then alternate=dark; else alternate=light; fi
+    "${qa_theme[@]}" apply "$alternate" --adwaita
+    sleep 0.8
+    [[ $(gsettings get org.gnome.desktop.interface color-scheme) == "'prefer-$alternate'" ]]
+    [[ $(gsettings get org.gnome.shell.extensions.user-theme name) == "'${qa_family^}-${alternate^}'" ]]
+    gnome-extensions info user-theme@gnome-shell-extensions.gcampax.github.com | grep -F 'State: ACTIVE'
+    printf 'Switched %s → %s in the running Shell\n' "$variant" "$alternate"
+
+    "${qa_theme[@]}" restore
+    sleep 0.8
+    snapshot > "$qa_temp/preferences.after"
+    diff -u "$qa_temp/preferences.before" "$qa_temp/preferences.after"
+    cmp "$qa_temp/original.css" "$qa_startup_css"
+    printf 'Restored %s settings and existing GTK CSS byte for byte\n' "$variant"
+done
+
+"${qa_theme[@]}" uninstall
+[[ ! -d "$XDG_DATA_HOME/themes/${qa_family^}-Light" && ! -d "$XDG_DATA_HOME/themes/${qa_family^}-Dark" ]]

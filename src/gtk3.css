@@ -1,0 +1,337 @@
+/* Folio for GTK 3. Toolkit-provided Adwaita supplies widget layout and assets. */
+@import url("resource:///org/gtk/libgtk/theme/Adwaita/{{GTK3_BASE}}");
+
+@define-color theme_bg_color {{BACKGROUND}};
+@define-color theme_fg_color {{FOREGROUND}};
+@define-color theme_base_color {{SURFACE}};
+@define-color theme_text_color {{FOREGROUND}};
+@define-color theme_selected_bg_color {{ACCENT}};
+@define-color theme_selected_fg_color {{ON_ACCENT}};
+@define-color theme_unfocused_bg_color {{BACKGROUND}};
+@define-color theme_unfocused_fg_color {{MUTED}};
+@define-color theme_unfocused_base_color {{SURFACE}};
+@define-color theme_unfocused_text_color {{FOREGROUND}};
+@define-color theme_unfocused_selected_bg_color {{SELECTION}};
+@define-color theme_unfocused_selected_fg_color {{FOREGROUND}};
+@define-color insensitive_bg_color {{SUBTLE}};
+@define-color insensitive_fg_color {{DISABLED}};
+@define-color insensitive_base_color {{SUBTLE}};
+@define-color unfocused_insensitive_color {{DISABLED}};
+@define-color borders {{BORDER}};
+@define-color unfocused_borders {{BORDER}};
+@define-color content_view_bg {{SURFACE}};
+@define-color text_view_bg {{SURFACE}};
+@define-color success_color {{SUCCESS}};
+@define-color warning_color {{WARNING}};
+@define-color error_color {{ERROR}};
+@define-color folio_focus {{FOCUS}};
+@define-color folio_edge {{CONTROL_BORDER}};
+
+/* The changing header stock is the primary window-focus cue. */
+.background, .background:backdrop {
+  color: @theme_fg_color;
+  background-color: @theme_bg_color;
+}
+
+headerbar, .titlebar:not(headerbar) {
+  color: @theme_fg_color;
+  background-color: {{HEADER}};
+  background-image: none;
+  border-color: {{RULE}};
+  box-shadow: none;
+}
+
+headerbar:backdrop, .titlebar:backdrop:not(headerbar) {
+  color: @theme_fg_color;
+  background-color: {{HEADER_INACTIVE}};
+  border-color: @borders;
+  box-shadow: none;
+}
+
+headerbar .title, .titlebar:not(headerbar) .title { font-weight: {{TYPE_WEIGHT}}; }
+headerbar .subtitle, .titlebar:not(headerbar) .subtitle { color: {{MUTED}}; opacity: 1; }
+window.csd decoration { border-radius: {{RADIUS_SURFACE}} {{RADIUS_SURFACE}} 0 0; }
+window.maximized decoration, window.tiled decoration, window.fullscreen decoration { border-radius: 0; }
+
+.view, .view:backdrop, iconview, iconview:backdrop, list, list:backdrop,
+textview text, textview:backdrop text, treeview.view {
+  color: @theme_text_color;
+  background-color: @theme_base_color;
+}
+
+.sidebar, .sidebar:backdrop, placessidebar list, placessidebar list:backdrop {
+  color: @theme_text_color;
+  background-color: {{SUBTLE}};
+  border-color: @borders;
+}
+
+row.activatable:hover, placessidebar row:hover { background-color: {{HOVER}}; }
+row.activatable:active, placessidebar row:active { background-color: {{PRESSED}}; }
+row:selected, row:selected:hover, row:selected:focus,
+placessidebar row:selected, placessidebar row:selected:hover,
+.view:selected, .view:selected:focus, treeview.view:selected, treeview.view:selected:focus,
+iconview:selected, iconview:selected:focus {
+  color: @theme_selected_fg_color;
+  background-color: @theme_selected_bg_color;
+  text-shadow: none;
+}
+
+row:selected:backdrop, .view:selected:backdrop, .view:selected:focus:backdrop,
+treeview.view:selected:backdrop, iconview:selected:backdrop {
+  color: @theme_unfocused_selected_fg_color;
+  background-color: @theme_unfocused_selected_bg_color;
+}
+
+row:selected .dim-label { color: inherit; }
+
+treeview.view header button, treeview.view header button:backdrop {
+  color: {{MUTED}};
+  background-color: {{SUBTLE}};
+  border-color: @borders;
+}
+
+treeview.view header button:hover { color: @theme_fg_color; background-color: {{HOVER}}; }
+treeview.view.expander { color: {{MUTED}}; }
+treeview.view.expander:selected, treeview.view.expander:selected:hover { color: @theme_selected_fg_color; }
+treeview.view.expander:selected:backdrop { color: @theme_text_color; }
+
+entry, entry:backdrop, entry.flat:focus {
+  color: @theme_text_color;
+  caret-color: {{ACCENT_INK}};
+  background-color: @theme_base_color;
+  background-image: none;
+  border-color: @folio_edge;
+  box-shadow: none;
+}
+
+entry:focus, treeview entry:focus, treeview entry.flat:focus {
+  border-color: @folio_focus;
+  box-shadow: inset 0 0 0 1px @folio_focus;
+}
+
+entry:disabled, entry:backdrop:disabled {
+  color: @insensitive_fg_color;
+  background-color: @insensitive_bg_color;
+  border-color: @borders;
+}
+
+entry placeholder, .dim-label { color: {{MUTED}}; opacity: 1; }
+entry:disabled placeholder, label:disabled, .dim-label:disabled { color: @insensitive_fg_color; }
+entry selection, textview text selection, label selection {
+  color: @theme_selected_fg_color;
+  background-color: @theme_selected_bg_color;
+}
+entry:backdrop selection, textview:backdrop text selection, label:backdrop selection {
+  color: @theme_unfocused_selected_fg_color;
+  background-color: @theme_unfocused_selected_bg_color;
+}
+
+button:not(.circular), entry:not(.flat) { border-radius: {{RADIUS_CONTROL}}; }
+button:not(.flat), button:not(.flat):backdrop {
+  color: @theme_fg_color;
+  background-color: {{RAISED}};
+  background-image: none;
+  border-color: @folio_edge;
+  box-shadow: none;
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+}
+
+button:not(.flat):hover { background-color: {{HOVER}}; }
+button:not(.flat):active { background-color: {{PRESSED}}; }
+button:not(.flat):checked, headerbar button.toggle:checked, .titlebar button.toggle:checked {
+  color: {{ACCENT_INK}};
+  background-color: {{SELECTION}};
+  background-image: none;
+  border-color: {{ACCENT_INK}};
+}
+
+button.titlebutton, button.titlebutton:backdrop { background-color: transparent; border-color: transparent; }
+button.titlebutton:hover { background-color: {{HOVER}}; }
+
+button.flat:backdrop { color: {{MUTED}}; }
+button.flat:hover { color: @theme_fg_color; background-color: {{HOVER}}; background-image: none; }
+button.flat:active, button.flat:checked { color: @theme_fg_color; background-color: {{PRESSED}}; background-image: none; }
+button.suggested-action.flat, button.suggested-action.flat:backdrop { color: {{ACCENT_INK}}; }
+button.destructive-action.flat, button.destructive-action.flat:backdrop { color: {{ERROR}}; }
+
+button.suggested-action:not(.flat), button.suggested-action:not(.flat):backdrop {
+  color: @theme_selected_fg_color;
+  background-color: @theme_selected_bg_color;
+  background-image: none;
+  border-color: @theme_selected_bg_color;
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+}
+
+button.suggested-action:not(.flat):hover { background-color: {{ACCENT_HOVER}}; }
+button.suggested-action:not(.flat):active, button.suggested-action:not(.flat):checked {
+  background-color: {{ACCENT_PRESSED}};
+}
+
+button.destructive-action:not(.flat), button.destructive-action:not(.flat):backdrop {
+  color: {{ON_ERROR}};
+  background-color: @error_color;
+  background-image: none;
+  border-color: @error_color;
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+}
+
+button.destructive-action:not(.flat):hover { background-color: mix(@error_color, {{ON_ERROR}}, 0.1); }
+button.destructive-action:not(.flat):active, button.destructive-action:not(.flat):checked {
+  background-color: mix(@error_color, {{ON_ERROR}}, 0.16);
+}
+
+button:not(.flat):disabled, button:not(.flat):disabled:backdrop,
+button:not(.flat):disabled:checked, button:not(.flat):disabled:active,
+button.suggested-action:not(.flat):disabled, button.destructive-action:not(.flat):disabled,
+button.suggested-action:not(.flat):disabled:checked, button.destructive-action:not(.flat):disabled:checked,
+button.suggested-action:not(.flat):disabled:backdrop, button.destructive-action:not(.flat):disabled:backdrop {
+  color: @insensitive_fg_color;
+  background-color: @insensitive_bg_color;
+  background-image: none;
+  border-color: @borders;
+}
+
+button.flat:disabled, button.flat:disabled:backdrop,
+button.suggested-action.flat:disabled, button.destructive-action.flat:disabled { color: @insensitive_fg_color; }
+
+button:focus, checkbutton:focus, radiobutton:focus, switch:focus,
+notebook > header > tabs > tab:focus, scale:focus, row:focus, treeview:focus {
+  outline-color: @folio_focus;
+  outline-style: solid;
+  outline-width: {{FOCUS_WIDTH}};
+  outline-offset: -3px;
+}
+
+button.suggested-action:not(.flat):focus, row:selected:focus { outline-color: @theme_selected_fg_color; }
+button.destructive-action:not(.flat):focus { outline-color: {{ON_ERROR}}; }
+
+check, radio, check:backdrop, radio:backdrop {
+  color: @theme_fg_color;
+  background-color: @theme_base_color;
+  background-image: none;
+  border-color: @folio_edge;
+  box-shadow: none;
+}
+
+check { border-radius: {{RADIUS_SMALL}}; }
+check:hover, radio:hover { background-image: none; background-color: {{HOVER}}; }
+check:checked, radio:checked, check:indeterminate, radio:indeterminate,
+check:checked:backdrop, radio:checked:backdrop, check:indeterminate:backdrop, radio:indeterminate:backdrop {
+  color: @theme_selected_fg_color;
+  background-image: none;
+  background-color: @theme_selected_bg_color;
+  border-color: @theme_selected_bg_color;
+}
+
+check:checked:hover, radio:checked:hover, check:indeterminate:hover, radio:indeterminate:hover {
+  background-color: {{ACCENT_HOVER}};
+  background-image: none;
+}
+
+check:disabled, radio:disabled, check:disabled:checked, radio:disabled:checked,
+check:disabled:backdrop, radio:disabled:backdrop {
+  color: @insensitive_fg_color;
+  background-color: @insensitive_bg_color;
+  background-image: none;
+  border-color: @borders;
+}
+
+switch, switch:backdrop { background-color: {{SUBTLE}}; border-color: @folio_edge; text-shadow: none; }
+switch:checked, switch:checked:backdrop {
+  color: @theme_selected_fg_color;
+  background-color: @theme_selected_bg_color;
+  border-color: @theme_selected_bg_color;
+  text-shadow: none;
+}
+switch slider, switch:hover slider, switch:backdrop slider {
+  background-color: {{CONTROL_BORDER}};
+  background-image: none;
+  border-color: {{CONTROL_BORDER}};
+  box-shadow: none;
+}
+switch:checked > slider, switch:checked:backdrop > slider {
+  background-color: @theme_selected_fg_color;
+  border-color: @theme_selected_bg_color;
+}
+switch:disabled, switch:disabled:backdrop { background-color: @insensitive_bg_color; border-color: @borders; }
+switch:disabled slider, switch:disabled:backdrop slider { background-color: @insensitive_fg_color; background-image: none; border-color: @borders; }
+switch:checked:focus { outline-offset: 1px; }
+
+scale trough, progressbar trough, levelbar trough { background-color: {{SUBTLE}}; border-color: @folio_edge; }
+scale highlight, progressbar progress, levelbar block.filled {
+  background-color: @theme_selected_bg_color;
+  background-image: none;
+  border-color: @theme_selected_bg_color;
+}
+levelbar block.low { background-color: @warning_color; border-color: @warning_color; }
+levelbar block.high, levelbar block.full { background-color: @success_color; border-color: @success_color; }
+scale slider, scale slider:hover, scale slider:backdrop {
+  background-color: {{RAISED}};
+  background-image: none;
+  border-color: @folio_edge;
+}
+scale value { color: {{MUTED}}; }
+
+notebook > header, notebook > header:backdrop, menubar, menubar:backdrop {
+  color: @theme_fg_color;
+  background-color: {{SUBTLE}};
+  border-color: @borders;
+}
+notebook > stack { border-color: @borders; }
+notebook > header > tabs > tab, notebook > header > tabs > tab:backdrop { color: {{MUTED}}; }
+notebook > header > tabs > tab:hover { color: @theme_fg_color; background-color: {{HOVER}}; }
+notebook > header > tabs > tab:checked, notebook > header > tabs > tab:checked:backdrop {
+  color: {{ACCENT_INK}};
+  background-color: {{SELECTION}};
+  border-color: @theme_selected_bg_color;
+  box-shadow: none;
+}
+notebook > header.top > tabs > tab:checked { box-shadow: inset 0 -2px @theme_selected_bg_color; }
+notebook > header.bottom > tabs > tab:checked { box-shadow: inset 0 2px @theme_selected_bg_color; }
+notebook > header.left > tabs > tab:checked { box-shadow: inset -2px 0 @theme_selected_bg_color; }
+notebook > header.right > tabs > tab:checked { box-shadow: inset 2px 0 @theme_selected_bg_color; }
+notebook:focus > header > tabs > tab:checked { outline-color: @folio_focus; }
+menubar > menuitem:hover, .menubar > menuitem:hover {
+  color: {{ACCENT_INK}};
+  box-shadow: inset 0 -2px {{ACCENT_INK}};
+}
+
+menu, .menu, .context-menu, menu:backdrop, .menu:backdrop, .context-menu:backdrop {
+  color: @theme_fg_color;
+  background-color: {{RAISED}};
+  border-color: @borders;
+}
+menu menuitem:hover, .menu menuitem:hover, .context-menu menuitem:hover {
+  color: @theme_selected_fg_color;
+  background-color: @theme_selected_bg_color;
+}
+menuitem accelerator { color: inherit; }
+menuitem:disabled { color: @insensitive_fg_color; }
+popover.background, popover.background:backdrop {
+  color: @theme_fg_color;
+  background-color: {{RAISED}};
+  border-color: @borders;
+  border-radius: {{RADIUS_SURFACE}};
+}
+
+tooltip.background {
+  color: @theme_fg_color;
+  background-color: {{RAISED}};
+  border-color: @borders;
+  border-radius: {{RADIUS_CONTROL}};
+  text-shadow: none;
+}
+tooltip * { color: @theme_fg_color; }
+separator { background-color: @borders; }
+scrollbar slider, scrollbar slider:backdrop { background-color: @folio_edge; }
+scrollbar slider:hover { background-color: {{MUTED}}; }
+scrollbar slider:hover:active { background-color: {{ACCENT_INK}}; }
+scrollbar slider:disabled { background-color: transparent; }
+
+link, label:link, button:link { color: {{ACCENT_INK}}; }
+.success { color: @success_color; }
+.warning { color: @warning_color; }
+.error, label.error { color: @error_color; }

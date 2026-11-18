@@ -1,0 +1,7 @@
+{
+  "uuid": "halo-glass@gnobramanium",
+  "name": "Halo Glass",
+  "description": "Marks Halo's three panel islands as Blur my Shell blur targets. Part of the Halo theme; it does nothing on its own.",
+  "shell-version": ["46", "47", "48", "49", "50", "51"],
+  "url": "https://github.com/trilloc/halo"
+}

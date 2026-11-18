@@ -1,0 +1,955 @@
+#!/usr/bin/python3
+"""Install and manage the Halo theme for the current GNOME user."""
+
+import argparse
+from contextlib import ExitStack, contextmanager
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import stat
+import sys
+import tempfile
+import time
+
+from gi.repository import Gio, GLib
+
+
+BUILD = Path(__file__).resolve().parents[1] / "build"
+DATA = Path(GLib.get_user_data_dir())
+STATE = Path(GLib.get_user_state_dir()) / "halo"
+GTK_CSS = Path(GLib.get_user_config_dir()) / "gtk-4.0" / "gtk.css"
+BACKUP = STATE / "gtk.css.original"
+THEMES = DATA / "themes"
+ICONS = DATA / "icons"
+FAMILY_ACCENTS = {"halo": "blue"}
+VARIANTS = ("light", "dark")
+
+INTERFACE = "org.gnome.desktop.interface"
+A11Y = "org.gnome.desktop.a11y.interface"
+BACKGROUND = "org.gnome.desktop.background"
+SHELL = "org.gnome.shell"
+USER_THEME = "org.gnome.shell.extensions.user-theme"
+UUID = "user-theme@gnome-shell-extensions.gcampax.github.com"
+BLUR_UUID = "blur-my-shell@aunetx"
+HALO_UUID = "halo-glass@gnobramanium"
+BLUR = "org.gnome.shell.extensions.blur-my-shell"
+DOCK = "org.gnome.shell.extensions.dash-to-dock"
+TEXT_EDITOR = "org.gnome.TextEditor"
+PTYXIS = "org.gnome.Ptyxis"
+PTYXIS_PROFILE = "org.gnome.Ptyxis.Profile"
+MANAGED_UUIDS = (UUID, BLUR_UUID, HALO_UUID)
+EXTENSIONS = DATA / "gnome-shell" / "extensions"
+EXTENSION_KEYS = ("enabled-extensions", "disabled-extensions")
+GTK_KEY = (INTERFACE, "gtk-theme")
+SHELL_KEY = (USER_THEME, "name")
+
+def exists(path):
+    return os.path.lexists(path)
+
+
+@contextmanager
+def atomic_path(path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=path.parent, prefix=".folio-") as temp:
+        replacement = Path(temp) / path.name
+        yield replacement
+        os.replace(replacement, path)
+
+
+@contextmanager
+def managed_state():
+    STATE.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with (STATE / "lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        state_file = STATE / "state.json"
+        state = json.loads(state_file.read_text()) if state_file.is_file() else {}
+        yield state
+
+
+def save(state):
+    with atomic_path(STATE / "state.json") as temp:
+        temp.write_text(json.dumps(state, indent=2) + "\n")
+
+
+def variant_name(family, variant):
+    return f"{family.title()}-{variant.title()}"
+
+
+def installed(path, family):
+    return not path.is_symlink() and (path / f".{family}-install").is_file()
+
+
+def install(family):
+    entries = []
+    if family == "halo":
+        for style in VARIANTS:
+            icons = BUILD / family / "icons" / variant_name(family, style)
+            if not icons.is_dir():
+                raise ValueError(f"Missing {icons}. Build Halo first.")
+            entries.append((ICONS / variant_name(family, style), [(icons, Path("."))]))
+        helper = BUILD / family / "extension" / HALO_UUID
+        if not (helper / "metadata.json").is_file():
+            raise ValueError(f"Missing {helper}. Build Halo first.")
+        entries.append((EXTENSIONS / HALO_UUID, [(helper, Path("."))]))
+    for style in VARIANTS:
+        variant = variant_name(family, style)
+        source = BUILD / variant
+        for relative in ("gnome-shell/gnome-shell.css", "gtk-3.0/gtk.css", "gtk-4.0/gtk.css"):
+            if not (source / relative).is_file():
+                raise ValueError(f"Missing {source / relative}. Build {family.title()} first.")
+        legacy_path = Path.home() / ".themes" / variant
+        if legacy_path != THEMES / variant and exists(legacy_path):
+            raise ValueError(f"Move {legacy_path} aside before installing. GNOME reads it first.")
+        entries.append((THEMES / variant, [(source, Path("."))]))
+    asset_source = BUILD if family == "folio" else BUILD / family
+    assets = [(asset_source / directory, Path(directory))
+              for directory in ("wallpapers", "adwaita", "terminal", "editor", "blur-my-shell.json")
+              if (asset_source / directory).exists()]
+    if assets or installed(DATA / family, family):
+        entries.append((DATA / family, assets))
+
+    for path, _ in entries:
+        if exists(path) and not installed(path, family):
+            raise ValueError(f"{path} already exists and belongs to another installation.")
+
+    install_entries(entries, family)
+    print(f"Installed {family.title()} in {THEMES}")
+
+
+def install_entries(entries, family):
+    with ExitStack() as stack:
+        staged = []
+        for path, sources in entries:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            temp = Path(stack.enter_context(tempfile.TemporaryDirectory(
+                dir=path.parent, prefix=".folio-")))
+            new = temp / "new"
+            new.mkdir()
+            for source, relative in sources:
+                if source.is_dir():
+                    shutil.copytree(source, new / relative, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(source, new / relative)
+            (new / f".{family}-install").touch()
+            staged.append((path, temp / "old", new))
+
+        try:
+            for path, old, new in staged:
+                if exists(path):
+                    os.replace(path, old)
+                os.replace(new, path)
+        except BaseException:
+            for path, old, new in reversed(staged):
+                if not exists(new):
+                    shutil.rmtree(path)
+                if exists(old):
+                    os.replace(old, path)
+            raise
+
+
+def extension_path(uuid=UUID):
+    roots = [DATA, *(Path(path) for path in GLib.get_system_data_dirs())]
+    return next((root / "gnome-shell" / "extensions" / uuid for root in roots
+                 if (root / "gnome-shell" / "extensions" / uuid / "metadata.json").is_file()), None)
+
+
+def schema_extension(schema_id):
+    if schema_id == USER_THEME:
+        return UUID
+    if schema_id == BLUR or schema_id.startswith(BLUR + "."):
+        return BLUR_UUID
+    return None
+
+
+def settings(schema_id):
+    # A relocatable schema is recorded as "schema@/path/".
+    schema_id, _, path = schema_id.partition("@")
+    source = Gio.SettingsSchemaSource.get_default()
+    if (uuid := schema_extension(schema_id)) and (extension := extension_path(uuid)):
+        schemas = extension / "schemas"
+        if (schemas / "gschemas.compiled").is_file():
+            source = Gio.SettingsSchemaSource.new_from_directory(str(schemas), source, False)
+    schema = source.lookup(schema_id, True) if source else None
+    if schema is None or bool(path) != (schema.get_path() is None):
+        return None
+    store = Gio.Settings.new_full(schema, None, path or None)
+    store.managed_id = f"{schema_id}@{path}" if path else schema_id
+    return store
+
+
+def store_id(store):
+    return getattr(store, "managed_id", store.props.schema_id)
+
+
+def variant_text(value):
+    return value.print_(True) if value is not None else None
+
+
+def write_setting(store, key, value):
+    if value is None:
+        store.reset(key)
+    else:
+        variant = GLib.Variant.parse(store.get_value(key).get_type(), value, None, None)
+        if not store.set_value(key, variant):
+            raise ValueError(f"Could not write {store_id(store)} {key}")
+    Gio.Settings.sync()
+    if variant_text(store.get_user_value(key)) != value:
+        raise ValueError(f"Could not verify {store_id(store)} {key}")
+
+
+def update_setting(state, store, key, value, set_user_value=False):
+    original = variant_text(store.get_user_value(key))
+    expected = variant_text(value)
+    if store.get_value(key) == value and (not set_user_value or original == expected):
+        return
+    state_key = f"{store_id(store)} {key}"
+    records = state.setdefault("settings", {})
+    if state_key in records:
+        record = records[state_key]
+    else:
+        record = {"before": original, "owned": [original]}
+        if store.props.schema_id == SHELL and key in EXTENSION_KEYS:
+            record["extension_before"] = store.get_strv(key)
+
+    record["owned"].append(expected)
+    records[state_key] = record
+    save(state)
+    write_setting(store, key, expected)
+    record["owned"] = [expected]
+    save(state)
+
+
+def sync_user_theme(activate=False):
+    # GNOME 50.1 User Themes can retain a name callback after disable.
+    # Change the name only while the extension is active.
+    try:
+        bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        deadline = time.monotonic() + 2
+        while True:
+            response = bus.call_sync(
+                "org.gnome.Shell", "/org/gnome/Shell", "org.gnome.Shell.Extensions",
+                "GetExtensionInfo", GLib.Variant("(s)", (UUID,)), None,
+                Gio.DBusCallFlags.NO_AUTO_START, 1000, None,
+            )
+            # State 1 is ACTIVE. On restore the reply itself is the barrier.
+            info = response.unpack()[0]
+            active = info.get("state") == 1
+            if not activate or not info or active:
+                return active
+            if time.monotonic() >= deadline:
+                raise ValueError("User Themes did not become active in GNOME Shell. Check it in Extensions.")
+            time.sleep(0.04)
+    except GLib.Error:
+        return False
+
+
+def finish_shell_refresh(state):
+    pending = state.get("shell_refresh")
+    if not pending:
+        return
+    store = settings(USER_THEME)
+    key = SHELL_KEY[1]
+    if store and variant_text(store.get_user_value(key)) == pending["alias"]:
+        write_setting(store, key, pending["before"])
+        sync_user_theme()
+    del state["shell_refresh"]
+    save(state)
+
+
+def refresh_shell(state, store, name):
+    key = SHELL_KEY[1]
+    # User Themes resolves both names to the same stylesheet, so this reloads
+    # the installed CSS without briefly selecting a different visual theme.
+    alias = variant_text(GLib.Variant("s", f"./{name}"))
+    state["shell_refresh"] = {"alias": alias, "before": variant_text(store.get_user_value(key))}
+    save(state)
+    try:
+        write_setting(store, key, alias)
+        sync_user_theme()
+    finally:
+        finish_shell_refresh(state)
+
+
+def refresh(state, family):
+    store = settings(USER_THEME)
+    key = SHELL_KEY[1]
+    name = store.get_string(key) if store else ""
+    if name not in (variant_name(family, style) for style in VARIANTS) or not installed(THEMES / name, family):
+        raise ValueError(f"Select an installed {family.title()} variant before refreshing it.")
+    if not store.is_writable(key) or not sync_user_theme():
+        raise ValueError("Refreshing the stylesheet requires an active, writable User Themes extension.")
+    refresh_shell(state, store, name)
+    print(f"Refreshed {name} in GNOME Shell.")
+
+
+def restore_settings(state, matches=lambda schema, key: True):
+    records = state.get("settings", {})
+    shell_theme = " ".join(SHELL_KEY)
+    order = sorted(reversed(records), key=lambda state_key: state_key != shell_theme)
+    for state_key in order:
+        schema, key = state_key.split(" ", 1)
+        if not matches(schema, key):
+            continue
+        store = settings(schema)
+        record = records[state_key]
+        if store and store.props.settings_schema.has_key(key):
+            current = variant_text(store.get_user_value(key))
+            if current in record["owned"]:
+                write_setting(store, key, record["before"])
+                if state_key == shell_theme and any(f"{SHELL} {key}" in records for key in EXTENSION_KEYS):
+                    sync_user_theme()
+            elif "extension_before" in record:
+                before = record["extension_before"]
+                entries = store.get_strv(key)
+                current_entries = entries.copy()
+                for uuid in MANAGED_UUIDS:
+                    if uuid in before and uuid not in entries:
+                        entries.insert(min(before.index(uuid), len(entries)), uuid)
+                    elif uuid not in before and uuid in entries:
+                        entries.remove(uuid)
+                if entries != current_entries:
+                    write_setting(store, key, variant_text(GLib.Variant("as", entries)))
+            else:
+                print(f"Kept your newer setting for {schema} {key}.")
+        else:
+            print(f"Skipped unavailable setting {schema} {key}.")
+        del records[state_key]
+        save(state)
+
+
+def gtk_marker(family):
+    return f"/* {family.title()} optional libadwaita palette */".encode()
+
+
+def gtk_import(family):
+    uri = (DATA / family / "adwaita" / f"{family}.css").as_uri()
+    return gtk_marker(family) + f'\n@import url("{uri}");\n\n'.encode()
+
+
+def active_gtk_palette():
+    if GTK_CSS.is_file():
+        with GTK_CSS.open("rb") as stylesheet:
+            header = stylesheet.readline()
+        return next((family for family in FAMILY_ACCENTS if header == gtk_marker(family) + b"\n"), None)
+    return None
+
+
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def apply_adwaita(state, family):
+    original = GTK_CSS.read_bytes() if exists(GTK_CSS) else b""
+    prefix = gtk_import(family)
+    record = state.get("gtk_css")
+    if record:
+        previous = active_gtk_palette()
+        if previous is None or not original.startswith(gtk_import(previous)):
+            raise ValueError(f"Restore the earlier activation before changing the optional palette in {GTK_CSS}.")
+        if previous == family:
+            return
+        contents = prefix + original[len(gtk_import(previous)):]
+        unchanged = sha(original) in (record["managed_sha"], record.get("pending_sha"))
+        record["pending_sha"] = sha(contents) if unchanged else None
+    else:
+        contents = prefix + original
+        record = {"managed_sha": sha(contents)}
+        if GTK_CSS.is_symlink():
+            record["symlink"] = os.readlink(GTK_CSS)
+        elif GTK_CSS.is_file():
+            if exists(BACKUP) and BACKUP.read_bytes() != original:
+                raise ValueError(f"Move your saved stylesheet {BACKUP} aside before reapplying.")
+            with atomic_path(BACKUP) as temp:
+                shutil.copy2(GTK_CSS, temp)
+            record["original_sha"] = sha(original)
+        state["gtk_css"] = record
+
+    save(state)
+    with atomic_path(GTK_CSS) as temp:
+        temp.write_bytes(contents)
+        temp.chmod(stat.S_IMODE(GTK_CSS.stat().st_mode) if exists(GTK_CSS) else 0o600)
+    if "pending_sha" in record:
+        record["managed_sha"] = record.pop("pending_sha")
+        save(state)
+    print(f"Applied the optional {family.title()} GTK 4 palette. Reopen GTK 4 apps to load it.")
+
+
+def restore_adwaita(state):
+    record = state.get("gtk_css")
+    if not record:
+        return
+    contents = GTK_CSS.read_bytes() if GTK_CSS.is_file() and not GTK_CSS.is_symlink() else b""
+    if sha(contents) in (record["managed_sha"], record.get("pending_sha")):
+        if "symlink" in record:
+            with atomic_path(GTK_CSS) as temp:
+                temp.symlink_to(record["symlink"])
+        elif "original_sha" in record:
+            with atomic_path(GTK_CSS) as temp:
+                shutil.copy2(BACKUP, temp)
+        else:
+            GTK_CSS.unlink()
+    elif any(gtk_marker(family) in contents for family in FAMILY_ACCENTS):
+        family = active_gtk_palette()
+        if family is None or not contents.startswith(gtk_import(family)):
+            raise ValueError(f"Remove the edited theme import from {GTK_CSS}, then rerun restore.")
+        with atomic_path(GTK_CSS) as temp:
+            temp.write_bytes(contents[len(gtk_import(family)):])
+            shutil.copystat(GTK_CSS, temp)
+
+    if "original_sha" in record and exists(BACKUP):
+        if GTK_CSS.is_file() and sha(GTK_CSS.read_bytes()) == record["original_sha"]:
+            BACKUP.unlink()
+        else:
+            print(f"Kept your stylesheet edits and saved the earlier copy at {BACKUP}.")
+    del state["gtk_css"]
+    save(state)
+
+
+def wallpapers(family):
+    paths = {}
+    for variant in VARIANTS:
+        paths[variant] = next((p for p in sorted((DATA / family / "wallpapers").glob(f"{family}-{variant}.*"))
+                              if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")), None)
+    if any(path is None for path in paths.values()):
+        raise ValueError(f"The installed {family.title()} package needs both wallpapers. Use --no-wallpaper to restore your wallpapers.")
+    return paths
+
+
+def managed_value(state, store, key):
+    record = state.get("settings", {}).get(f"{store_id(store)} {key}")
+    return record and variant_text(store.get_user_value(key)) in record["owned"]
+
+
+def owns_wallpaper(family, uri):
+    return uri.startswith((DATA / family / "wallpapers").as_uri() + "/")
+
+
+def wallpaper_targets(state, family, wallpaper_requested):
+    if wallpaper_requested is False:
+        return []
+    background = settings(BACKGROUND)
+    locations = (("picture-uri", "light"), ("picture-uri-dark", "dark"))
+    active = (locations if wallpaper_requested else [
+        (key, style) for key, style in locations if managed_value(state, background, key)
+        and any(other != family and owns_wallpaper(other, background.get_string(key))
+                for other in FAMILY_ACCENTS)
+    ])
+    if not active:
+        return []
+    paths = wallpapers(family)
+    targets = [(background, "picture-options", GLib.Variant("s", "zoom"))] if wallpaper_requested else []
+    targets.extend((background, key, GLib.Variant("s", paths[style].as_uri())) for key, style in active)
+    return targets
+
+
+def extension_state(uuid):
+    """The Shell's state number for an extension, or None if the Shell does not know it."""
+    try:
+        bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        reply = bus.call_sync("org.gnome.Shell", "/org/gnome/Shell", "org.gnome.Shell.Extensions",
+                              "GetExtensionInfo", GLib.Variant("(s)", (uuid,)), None,
+                              Gio.DBusCallFlags.NO_AUTO_START, 1000, None)
+        return reply.unpack()[0].get("state")
+    except GLib.Error:
+        return None
+
+
+TINT = re.compile(r"/\* halo-tint (rgba\([^)]*\)) \| (rgba\([^)]*\)) \| (#[0-9a-fA-F]{6}) \| (rgba\([^)]*\))"
+                  r"(.*?\*/\n)(.*?)(/\* halo-tint end \*/)", re.S)
+# A light pane over a light wallpaper fades as its tint drops, so light keeps more.
+TINT_FLOOR = {"light": 0.56, "dark": 0.36}
+TINT_TARGET = 4.8  # 4.5:1 with a margin for sampling and compression noise
+PANEL_STRIP = 56   # logical pixels from the top edge that the islands can cover
+
+
+def rgba(text):
+    match = re.fullmatch(r"rgba\((\d+), (\d+), (\d+), ([0-9.]+)\)", text)
+    return tuple(int(match[index]) for index in (1, 2, 3)) + (float(match[4]),)
+
+
+def hex_rgb(text):
+    return tuple(int(text[offset:offset + 2], 16) for offset in (1, 3, 5))
+
+
+def relative_luminance(rgb):
+    linear = [(channel / 255 / 12.92) if channel <= 10.31 else ((channel / 255 + 0.055) / 1.055) ** 2.4
+              for channel in rgb]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def blend(color, alpha, backdrop):
+    return tuple(alpha * color[index] + (1 - alpha) * backdrop[index] for index in range(3))
+
+
+def screen_geometry():
+    """Aspect ratio and logical height of the primary monitor, with a 16:10 fallback."""
+    try:
+        bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        reply = bus.call_sync("org.gnome.Mutter.DisplayConfig", "/org/gnome/Mutter/DisplayConfig",
+                              "org.gnome.Mutter.DisplayConfig", "GetCurrentState", None, None,
+                              Gio.DBusCallFlags.NONE, 2000, None)
+        _, monitors, logical, _ = reply.unpack()
+        primary = next(entry for entry in logical if entry[4])
+        connector = primary[5][0][0]
+        monitor = next(entry for entry in monitors if entry[0][0] == connector)
+        mode = next(entry for entry in monitor[1] if entry[6].get("is-current"))
+        return mode[1] / mode[2], mode[2] / primary[2]
+    except (GLib.Error, StopIteration, IndexError, ZeroDivisionError, TypeError):
+        return 16 / 10, 960
+
+
+def wallpaper_strip(uri):
+    """Colours of the wallpaper area behind the panel, as shown with zoom scaling."""
+    path = Gio.File.new_for_uri(uri).get_path() if uri else None
+    if not path or not Path(path).is_file():
+        return None
+    try:
+        import gi
+        gi.require_version("GdkPixbuf", "2.0")
+        from gi.repository import GdkPixbuf
+        image = GdkPixbuf.Pixbuf.new_from_file_at_scale(path, 640, 640, True)
+    except (ImportError, ValueError, GLib.Error):
+        return None
+    if image.get_n_channels() < 3:
+        return None
+    aspect, logical_height = screen_geometry()
+    width, height = image.get_width(), image.get_height()
+    stride, channels, pixels = image.get_rowstride(), image.get_n_channels(), image.get_pixels()
+    if width / height > aspect:
+        visible_width, visible_height = height * aspect, height
+    else:
+        visible_width, visible_height = width, width / aspect
+    left, top = (width - visible_width) / 2, (height - visible_height) / 2
+    bottom = top + visible_height * min(1, PANEL_STRIP / logical_height)
+    samples = set()
+    for row in range(int(top), min(height, int(bottom) + 2)):
+        for column in range(int(left), min(width, int(left + visible_width)), 2):
+            offset = row * stride + column * channels
+            samples.add(tuple(pixels[offset + index] // 2 * 2 for index in range(3)))
+    return samples
+
+
+def lightest_tint(colors, samples, floor):
+    base, top, foreground, pressed = colors
+    lift = max(0.0, top[3] - base[3])
+    fg = relative_luminance(foreground)
+
+    def legible(alpha):
+        for sample in samples:
+            plane = blend(base, alpha, sample)
+            for backdrop in (plane, blend(pressed, pressed[3], plane), blend(top, min(1, alpha + lift), sample)):
+                light, dark = sorted((fg, relative_luminance(backdrop)), reverse=True)
+                if (light + 0.05) / (dark + 0.05) < TINT_TARGET:
+                    return False
+        return True
+
+    alpha = floor
+    while alpha < base[3]:
+        if legible(alpha):
+            return round(alpha, 2)
+        alpha += 0.02
+    return base[3]
+
+
+def write_tint(path, alpha):
+    css = path.read_text(encoding="utf-8")
+    match = TINT.search(css)
+    if match is None:
+        raise ValueError(f"{path} has no Halo tint block. Reinstall Halo.")
+    base, top = rgba(match[1]), rgba(match[2])
+    if alpha is None:
+        alpha = base[3]
+    top_alpha = min(1.0, alpha + max(0.0, top[3] - base[3]))
+    color = lambda value, level: f"rgba({value[0]}, {value[1]}, {value[2]}, {level:.2f})"
+    rules = ("#panelLeft,\n#panelCenter,\n#panelRight {\n"
+             f"  background-color: {color(base, alpha)};\n"
+             "  background-gradient-direction: vertical;\n"
+             f"  background-gradient-start: {color(top, top_alpha)};\n"
+             f"  background-gradient-end: {color(base, alpha)};\n}}\n")
+    updated = css[:match.start(6)] + rules + css[match.end(6):]
+    if updated != css:
+        with atomic_path(path) as temp:
+            temp.write_text(updated, encoding="utf-8")
+    return match, alpha
+
+
+def fit_island_tint(state, enabled, wallpaper_changes):
+    """Lower the island tint as far as the wallpaper behind the panel allows."""
+    background = settings(BACKGROUND)
+    chosen = {key: value.unpack() for store, key, value in wallpaper_changes if key.startswith("picture-uri")}
+    uris = {"light": chosen.get("picture-uri", background.get_string("picture-uri"))}
+    uris["dark"] = chosen.get("picture-uri-dark", background.get_string("picture-uri-dark")) or uris["light"]
+    results = {}
+    for style in VARIANTS:
+        path = THEMES / variant_name("halo", style) / "gnome-shell" / "gnome-shell.css"
+        if not path.is_file():
+            continue
+        alpha = None
+        if enabled:
+            match = TINT.search(path.read_text(encoding="utf-8"))
+            samples = wallpaper_strip(uris[style]) if match else None
+            if samples:
+                colors = (rgba(match[1]), rgba(match[2]), hex_rgb(match[3]), rgba(match[4]))
+                alpha = lightest_tint(colors, samples, TINT_FLOOR[style])
+        _, written = write_tint(path, alpha)
+        results[style] = written
+    if enabled and results:
+        state["tint"] = results
+        print("Island tint fitted to your wallpaper: "
+              + ", ".join(f"{style} {alpha:.2f}" for style, alpha in results.items()) + ".")
+    else:
+        state.pop("tint", None)
+    save(state)
+
+
+def pipeline_variant(pipeline):
+    def value(item):
+        if isinstance(item, bool):
+            return GLib.Variant("b", item)
+        return GLib.Variant("d" if isinstance(item, float) else "i", item)
+
+    effects = [GLib.Variant("a{sv}", {
+        "type": GLib.Variant("s", effect["type"]),
+        "id": GLib.Variant("s", effect["id"]),
+        "params": GLib.Variant("a{sv}", {key: value(item) for key, item in effect.get("params", {}).items()}),
+    }) for effect in pipeline["effects"]]
+    return GLib.Variant("a{sv}", {"name": GLib.Variant("s", pipeline["name"]), "effects": GLib.Variant("av", effects)})
+
+
+def blur_targets(family):
+    """Blur my Shell keys that shape the blur to Halo's surfaces and radii."""
+    base = settings(BLUR)
+    if base is None:
+        return []
+    config = json.loads((DATA / family / "blur-my-shell.json").read_text())
+    # Keep the user's own pipelines and add or refresh Halo's.
+    ours = config["pipelines"]
+    builder = GLib.VariantBuilder.new(GLib.VariantType.new("a{sa{sv}}"))
+    current = base.get_value("pipelines")
+    for index in range(current.n_children()):
+        entry = current.get_child_value(index)
+        if entry.get_child_value(0).get_string() not in ours:
+            builder.add_value(entry)
+    for name, pipeline in ours.items():
+        builder.add_value(GLib.Variant.new_dict_entry(GLib.Variant("s", name), pipeline_variant(pipeline)))
+    targets = [(base, "pipelines", builder.end())]
+    for component, keys in config["components"].items():
+        store = settings(f"{BLUR}.{component}")
+        if store is None:
+            continue
+        for key, item in keys.items():
+            if store.props.settings_schema.has_key(key):
+                kind = store.get_value(key).get_type_string()
+                targets.append((store, key, GLib.Variant(kind, float(item) if kind == "d" else item)))
+    return targets
+
+
+def is_halo_setting(schema, key):
+    schema = schema.partition("@")[0]
+    return (schema == BLUR or schema.startswith(BLUR + ".") or schema in (DOCK, TEXT_EDITOR, PTYXIS_PROFILE)
+            or (schema, key) == (INTERFACE, "icon-theme"))
+
+
+def previous_icon_theme(state, interface):
+    current = interface.get_string("icon-theme")
+    if not current.startswith("Halo-"):
+        return current
+    record = state.get("settings", {}).get(f"{INTERFACE} icon-theme")
+    if record and record["before"]:
+        return GLib.Variant.parse(GLib.VariantType.new("s"), record["before"], None, None).unpack()
+    return "Yaru"
+
+
+def write_icon_index(state, interface):
+    inherited = [name for name in (previous_icon_theme(state, interface), "Yaru", "Adwaita", "hicolor")
+                 if name and not name.startswith("Halo-")]
+    for style in VARIANTS:
+        name = variant_name("halo", style)
+        index = (f"[Icon Theme]\nName=Halo {style.title()}\nComment=Halo folders over your icon theme\n"
+                 f"Inherits={','.join(dict.fromkeys(inherited))}\nDirectories=scalable/places\n\n"
+                 "[scalable/places]\nSize=64\nMinSize=8\nMaxSize=512\nType=Scalable\nContext=Places\n")
+        with atomic_path(ICONS / name / "index.theme") as temp:
+            temp.write_text(index)
+
+
+def app_links(family):
+    source = DATA / family
+    return [(DATA / "org.gnome.Ptyxis" / "palettes" / "halo.palette", source / "terminal" / "halo.palette"),
+            *((DATA / "gtksourceview-5" / "styles" / f"halo-{style}.xml", source / "editor" / f"halo-{style}.xml")
+              for style in VARIANTS)]
+
+
+def owns_link(path):
+    return path.is_symlink() and Path(os.readlink(path)).is_relative_to(DATA / "halo")
+
+
+def link_app_palettes(state, family):
+    linked = state.setdefault("links", [])
+    for path, target in app_links(family):
+        if exists(path) and not owns_link(path):
+            print(f"Kept your existing {path}.")
+            continue
+        with atomic_path(path) as temp:
+            temp.symlink_to(target)
+        if str(path) not in linked:
+            linked.append(str(path))
+        save(state)
+
+
+def remove_links(state):
+    for path in map(Path, state.pop("links", [])):
+        if owns_link(path):
+            path.unlink()
+    save(state)
+
+
+def app_targets(state, args):
+    targets = []
+    interface = settings(INTERFACE)
+    write_icon_index(state, interface)
+    targets.append((interface, "icon-theme", GLib.Variant("s", variant_name("halo", args.variant))))
+    editor = settings(TEXT_EDITOR)
+    if editor and editor.props.settings_schema.has_key("style-scheme"):
+        targets.append((editor, "style-scheme", GLib.Variant("s", f"halo-{args.variant}")))
+    terminal = settings(PTYXIS)
+    uuid = terminal.get_string("default-profile-uuid") if terminal else ""
+    profile = settings(f"{PTYXIS_PROFILE}@/org/gnome/Ptyxis/Profiles/{uuid}/") if uuid else None
+    if profile and profile.props.settings_schema.has_key("palette"):
+        targets.append((profile, "palette", GLib.Variant("s", "halo")))
+    return targets
+
+
+def dock_targets():
+    dock = settings(DOCK)
+    if dock is None:
+        print("Ubuntu Dock settings are not available; the dock layout is unchanged.")
+        return []
+    wanted = {"dock-position": "'BOTTOM'", "extend-height": "false", "dock-fixed": "false",
+              "intellihide": "true", "dash-max-icon-size": "48", "custom-theme-shrink": "false",
+              "apply-custom-theme": "false", "transparency-mode": "'DEFAULT'"}
+    return [(dock, key, GLib.Variant.parse(dock.get_value(key).get_type(), value, None, None))
+            for key, value in wanted.items() if dock.props.settings_schema.has_key(key)]
+
+
+def apply(state, args, family):
+    variant = variant_name(family, args.variant)
+    if not installed(THEMES / variant, family):
+        raise ValueError(f"Install {family.title()} first with ./scripts/theme --family {family} install.")
+    halo_only = [flag for flag in ("blur", "apps", "floating_dock", "tint") if getattr(args, flag) is not None]
+    if family != "halo" and halo_only:
+        raise ValueError("--blur, --apps, --tint and --floating-dock apply to Halo only.")
+    use_blur = family == "halo" and args.blur is not False and extension_path(BLUR_UUID) is not None
+    if family == "halo" and args.blur and not use_blur:
+        print("Blur my Shell is not installed. Halo keeps its tinted glass without blur.")
+    previous_palette = active_gtk_palette() if state.get("gtk_css") else None
+    set_palette = args.adwaita is True or (
+        args.adwaita is None and previous_palette is not None and previous_palette != family
+    )
+    if set_palette and not (DATA / family / "adwaita" / f"{family}.css").is_file():
+        raise ValueError(f"This {family.title()} package needs its GTK 4 palette. Use --no-adwaita to restore your stylesheet.")
+    wallpaper_changes = wallpaper_targets(state, family, args.wallpaper)
+
+    targets = []
+    interface = settings(INTERFACE)
+    high_contrast = settings(A11Y).get_boolean("high-contrast")
+    if high_contrast:
+        def theme_only(schema, key):
+            return (schema, key) in (GTK_KEY, SHELL_KEY) or schema == SHELL
+
+        restore_settings(state, theme_only)
+        print("Kept GNOME's native Shell and GTK themes for the active High Contrast setting.")
+    else:
+        targets.append((interface, GTK_KEY[1], GLib.Variant("s", variant)))
+        shell_style = settings(USER_THEME)
+        shell = settings(SHELL)
+        if extension_path() and shell_style and not shell.get_boolean("disable-user-extensions"):
+            enabled, disabled = (shell.get_strv(key) for key in EXTENSION_KEYS)
+            halo_glass = family == "halo" and extension_path(HALO_UUID) is not None
+            # Halo Glass comes before Blur my Shell, so the islands are marked when Blur my Shell starts.
+            wanted = [UUID, *([HALO_UUID] if halo_glass else []), *([BLUR_UUID] if use_blur else [])]
+            unwanted = [] if family == "halo" else [HALO_UUID]
+            if any(uuid in disabled for uuid in wanted):
+                targets.append((shell, EXTENSION_KEYS[1], GLib.Variant(
+                    "as", [uuid for uuid in disabled if uuid not in wanted])))
+            new_enabled = [uuid for uuid in enabled if uuid not in unwanted]
+            new_enabled += [uuid for uuid in wanted if uuid not in new_enabled]
+            if HALO_UUID in new_enabled and BLUR_UUID in new_enabled:
+                new_enabled.remove(HALO_UUID)
+                new_enabled.insert(new_enabled.index(BLUR_UUID), HALO_UUID)
+            if new_enabled != enabled:
+                targets.append((shell, EXTENSION_KEYS[0], GLib.Variant("as", new_enabled)))
+            targets.append((shell_style, SHELL_KEY[1], GLib.Variant("s", variant)))
+        else:
+            print("Shell styling requires User Themes and GNOME Shell extensions enabled.")
+
+    targets.append((interface, "color-scheme", GLib.Variant("s", f"prefer-{args.variant}")))
+    if interface.props.settings_schema.has_key("accent-color"):
+        targets.append((interface, "accent-color", GLib.Variant("s", FAMILY_ACCENTS[family])))
+    targets.extend(wallpaper_changes)
+    if family == "halo" and not high_contrast:
+        if use_blur:
+            # Write Halo's pipelines before Blur my Shell is enabled, so it never looks one up early.
+            targets[0:0] = blur_targets(family)
+        if args.apps is not False:
+            targets.extend(app_targets(state, args))
+        if args.floating_dock:
+            targets.extend(dock_targets())
+    for store, key, value in targets:
+        if not store.is_writable(key) and store.get_value(key) != value:
+            raise ValueError(f"{store_id(store)} {key} is not writable.")
+    if args.wallpaper is False:
+        restore_settings(state, lambda schema, key: schema == BACKGROUND)
+    if family == "halo" and not high_contrast:
+        fit_island_tint(state, args.tint is not False, wallpaper_changes)
+    if family != "halo" or high_contrast:
+        restore_settings(state, is_halo_setting)
+        remove_links(state)
+    else:
+        if args.blur is False:
+            restore_settings(state, lambda schema, key: schema.startswith(BLUR))
+        if args.apps is False:
+            restore_settings(state, lambda schema, key: schema.partition("@")[0] in (TEXT_EDITOR, PTYXIS_PROFILE)
+                             or (schema, key) == (INTERFACE, "icon-theme"))
+            remove_links(state)
+        elif args.apps is not False:
+            link_app_palettes(state, family)
+        if args.floating_dock is False:
+            restore_settings(state, lambda schema, key: schema == DOCK)
+    if set_palette:
+        apply_adwaita(state, family)
+    if args.adwaita is False:
+        restore_adwaita(state)
+    for store, key, value in targets:
+        if (store_id(store), key) == SHELL_KEY:
+            if sync_user_theme(activate=True) and store.get_value(key) == value and store.is_writable(key):
+                refresh_shell(state, store, value.unpack())
+        # Wallpaper consumers may explicitly set an inherited picture mode.
+        # Record the user's setting before giving them new picture URIs.
+        update_setting(state, store, key, value, set_user_value=key == "picture-options")
+    state["family"] = family
+    save(state)
+    print(f"Applied {variant}.")
+    if family == "halo" and not high_contrast and extension_path(HALO_UUID) and extension_state(HALO_UUID) is None:
+        print("Log out and back in once so GNOME Shell loads Halo Glass, which blurs each panel island.")
+
+
+def managed_family(state):
+    if state.get("family"):
+        return state["family"]
+    # Older Folio releases saved the same baseline before we wrote a family name.
+    return "folio" if state.get("settings") or state.get("gtk_css") else None
+
+
+def restore(state):
+    restore_settings(state)
+    restore_adwaita(state)
+    remove_links(state)
+    state.pop("family", None)
+    (STATE / "state.json").unlink(missing_ok=True)
+    print("Restored previous settings managed by the theme.")
+
+
+def has_managed_assets(state, family):
+    if state.get("gtk_css") and active_gtk_palette() == family:
+        return True
+    for schema, key in (GTK_KEY, SHELL_KEY):
+        store = settings(schema)
+        if store and managed_value(state, store, key):
+            if store.get_string(key) in (variant_name(family, style) for style in VARIANTS):
+                return True
+    background = settings(BACKGROUND)
+    return any(managed_value(state, background, key) and owns_wallpaper(family, background.get_string(key))
+               for key in ("picture-uri", "picture-uri-dark"))
+
+
+def uninstall(state, family):
+    if managed_family(state) == family or has_managed_assets(state, family):
+        restore(state)
+    for path in (*(THEMES / variant_name(family, style) for style in VARIANTS),
+                 *(ICONS / variant_name(family, style) for style in VARIANTS),
+                 *([EXTENSIONS / HALO_UUID] if family == "halo" else []), DATA / family):
+        if installed(path, family):
+            shutil.rmtree(path)
+    print(f"Removed {family.title()} theme and supporting assets.")
+
+
+def status(state, family):
+    paths = [THEMES / variant_name(family, style) for style in VARIANTS]
+    installed_paths = [path for path in paths if installed(path, family)]
+    for path in installed_paths:
+        print(f"Installed {path}")
+    if not installed_paths:
+        print(f"{family.title()} is not installed.")
+    for schema, key in (GTK_KEY, SHELL_KEY, (INTERFACE, "color-scheme"), (INTERFACE, "accent-color")):
+        store = settings(schema)
+        if store and store.props.settings_schema.has_key(key):
+            print(f"{key}: {store.get_string(key) or '(default)'}")
+    shell = settings(SHELL)
+    if not extension_path():
+        print("User Themes extension: missing")
+    elif shell and not shell.get_boolean("disable-user-extensions"):
+        enabled, disabled = (shell.get_strv(key) for key in EXTENSION_KEYS)
+        print("User Themes extension: " + ("enabled" if UUID in enabled and UUID not in disabled else "disabled"))
+    else:
+        print("User Themes extension: GNOME Shell extensions disabled")
+    print("Blur my Shell: " + ("installed" if extension_path(BLUR_UUID) else "not installed"))
+    if family == "halo":
+        loaded = extension_state(HALO_UUID)
+        print("Halo Glass: " + ("not installed" if not extension_path(HALO_UUID)
+                                else "active" if loaded == 1
+                                else "installed; loads after you log out and back in" if loaded is None
+                                else "installed, off"))
+        tint = state.get("tint")
+        if tint:
+            print("Island tint: " + ", ".join(f"{style} {alpha:.2f}" for style, alpha in tint.items()))
+    active = managed_family(state)
+    print("Managed theme family: " + (active.title() if active else "(none)"))
+    palette = active_gtk_palette() if state.get("gtk_css") else None
+    print("Managed GTK 4 palette: " + (palette.title() if palette else "(none)"))
+    print("Managed settings: " + str(len(state.get("settings", {}))))
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--family", choices=FAMILY_ACCENTS, default="halo",
+                        help="theme family to install, apply, inspect or uninstall (default: halo)")
+    commands = parser.add_subparsers(dest="command", required=True)
+    for name in ("install", "restore", "uninstall", "status", "refresh"):
+        commands.add_parser(name)
+    activation = commands.add_parser("apply")
+    activation.add_argument("variant", choices=VARIANTS)
+    activation.add_argument("--wallpaper", action=argparse.BooleanOptionalAction,
+                            help="apply or restore the optional wallpaper pair")
+    activation.add_argument("--adwaita", action=argparse.BooleanOptionalAction,
+                            help="apply or restore the optional GTK 4 palette")
+    activation.add_argument("--blur", action=argparse.BooleanOptionalAction,
+                            help="Halo: configure Blur my Shell for the glass surfaces (default when installed)")
+    activation.add_argument("--apps", action=argparse.BooleanOptionalAction,
+                            help="Halo: folder icons, terminal palette and editor scheme (default)")
+    activation.add_argument("--tint", action=argparse.BooleanOptionalAction,
+                            help="Halo: fit the panel islands' tint to your wallpaper (default)")
+    activation.add_argument("--floating-dock", action=argparse.BooleanOptionalAction,
+                            help="Halo: move Ubuntu Dock to a floating bottom dock, or restore its layout")
+    args = parser.parse_args()
+    with managed_state() as state:
+        if args.command != "status":
+            finish_shell_refresh(state)
+        if args.command == "install":
+            install(args.family)
+        elif args.command == "apply":
+            apply(state, args, args.family)
+        elif args.command == "restore":
+            restore(state)
+        else:
+            {"uninstall": uninstall, "status": status, "refresh": refresh}[args.command](state, args.family)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (ValueError, OSError, GLib.Error) as error:
+        sys.exit(f"Theme: {error}")

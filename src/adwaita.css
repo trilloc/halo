@@ -1,0 +1,68 @@
+/* Folio’s optional libadwaita palette. GTK loads this through the user CSS provider. */
+@media (prefers-color-scheme: {{VARIANT}}) and (not (prefers-contrast: more)) {
+  :root {
+    --accent-bg-color: {{ACCENT}};
+    --accent-fg-color: {{ON_ACCENT}};
+    --accent-color: {{ACCENT_INK}};
+    --destructive-bg-color: {{ERROR}};
+    --destructive-fg-color: {{ON_ERROR}};
+    --destructive-color: {{ERROR}};
+    --success-bg-color: {{SUCCESS}};
+    --success-fg-color: {{ON_ACCENT}};
+    --success-color: {{SUCCESS}};
+    --warning-bg-color: {{WARNING}};
+    --warning-fg-color: {{ON_ACCENT}};
+    --warning-color: {{WARNING}};
+    --error-bg-color: {{ERROR}};
+    --error-fg-color: {{ON_ERROR}};
+    --error-color: {{ERROR}};
+    --window-bg-color: {{BACKGROUND}};
+    --window-fg-color: {{FOREGROUND}};
+    --view-bg-color: {{SURFACE}};
+    --view-fg-color: {{FOREGROUND}};
+    --headerbar-bg-color: {{HEADER}};
+    --headerbar-fg-color: {{FOREGROUND}};
+    --headerbar-border-color: {{RULE}};
+    --headerbar-backdrop-color: {{HEADER_INACTIVE}};
+    --card-bg-color: {{RAISED}};
+    --card-fg-color: {{FOREGROUND}};
+    --dialog-bg-color: {{RAISED}};
+    --dialog-fg-color: {{FOREGROUND}};
+    --popover-bg-color: {{RAISED}};
+    --popover-fg-color: {{FOREGROUND}};
+    --thumbnail-bg-color: {{SUBTLE}};
+    --thumbnail-fg-color: {{FOREGROUND}};
+    --sidebar-bg-color: {{SUBTLE}};
+    --sidebar-fg-color: {{FOREGROUND}};
+    --sidebar-backdrop-color: {{HEADER_INACTIVE}};
+    --sidebar-border-color: {{BORDER}};
+    --secondary-sidebar-bg-color: {{BACKGROUND}};
+    --secondary-sidebar-fg-color: {{FOREGROUND}};
+    --secondary-sidebar-backdrop-color: {{HEADER_INACTIVE}};
+    --secondary-sidebar-border-color: {{BORDER}};
+  }
+
+  headerbar .title { font-weight: {{TYPE_WEIGHT}}; }
+  .dim-label:not(:disabled), entry > text > placeholder {
+    color: {{MUTED}};
+    opacity: 1;
+  }
+  headerbar:not(.flat):not(.raised) { box-shadow: inset 0 -1px {{RULE}}; }
+  headerbar:not(.flat):not(.raised):backdrop { box-shadow: inset 0 -1px {{BORDER}}; }
+  .navigation-sidebar row:selected, .navigation-sidebar row:selected:hover {
+    color: {{ACCENT_INK}};
+    background-color: {{SELECTION}};
+    box-shadow: inset 0 -2px {{ACCENT}};
+  }
+  .navigation-sidebar row:selected .dim-label:not(:disabled) { color: inherit; }
+  checkbutton > check:not(:checked):not(:indeterminate):not(:disabled),
+  checkbutton > radio:not(:checked):not(:indeterminate):not(:disabled),
+  switch:not(:checked):not(:disabled), entry:not(.flat):not(:disabled):not(:focus-within) {
+    box-shadow: inset 0 0 0 1px {{CONTROL_BORDER}};
+  }
+  button:focus:focus-visible, .navigation-sidebar row:focus:focus-visible {
+    outline-color: {{FOCUS}};
+    outline-width: {{FOCUS_WIDTH}};
+  }
+  button.suggested-action:not(.flat):focus:focus-visible { outline-color: {{ON_ACCENT}}; }
+}
