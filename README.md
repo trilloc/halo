@@ -5,7 +5,9 @@ A clear-glass theme for GNOME 50, built for Ubuntu 26.04. The top bar is three f
 Glass is decoration; legibility never depends on it. Every Shell surface is tinted so text keeps at least 4.5:1 contrast over pure black and pure white, even with no blur. If [Blur my Shell](https://extensions.gnome.org/extension/3193/blur-my-shell/) is installed, Halo configures it to blur what sits behind each surface.
 
 ![Halo light](docs/halo-screenshots/light/desktop.png)
-![Halo dark](docs/halo-screenshots/dark/notification.png)
+![Halo dark](docs/halo-screenshots/dark/desktop.png)
+
+More views (Quick Settings, calendar and notification, overview) are in [docs/halo-screenshots](docs/halo-screenshots/). They were captured in a disposable GNOME Shell 50.1 session on Ubuntu 26.04 (Wayland) **without** Blur my Shell, so they show Halo's tinted fallback. With Blur my Shell installed, the islands and menus also blur what is behind them.
 
 ## What you get
 
@@ -42,7 +44,7 @@ Nothing is installed system-wide, except the optional login screen. See [docs/ha
 ## Status
 
 - Developed and used daily on Ubuntu 26.04 with GNOME Shell 50 on Wayland.
-- The published screenshots and automated visual checks were produced in a disposable GNOME Shell 46 session. Run `./scripts/visual-qa/run /tmp/halo-review all halo` to repeat them on your own system.
+- The screenshots and automated visual checks come from the project's own disposable session (`./scripts/visual-qa/run /tmp/halo-review all halo`), which you can run on your own system. An earlier pass ran on GNOME Shell 46.
 - The login screen style has been exercised against Ubuntu's alternatives system but the greeter itself has not been seen on a running GDM. If it looks wrong, switch to a text console and run `sudo ./scripts/halo-login restore`.
 - GNOME versions other than 50, X11 sessions and other distributions are untested. Issues and pull requests are welcome.
 
